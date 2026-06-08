@@ -34,9 +34,37 @@
         </div>
         <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
         <div class="login-hint">
-          <strong>Usuarios disponibles:</strong><br>
-          deiby / ccss2024 &nbsp;·&nbsp; sebastian / aya2024 &nbsp;·&nbsp; lorna / super2024
+          <strong>Usuarios:</strong><br>
+          dvalverde / backup2024 &nbsp;·&nbsp; deiby / ccss2024<br>
+          sebastian / aya2024 &nbsp;·&nbsp; lorna / super2024<br>
+          <span style="color:#9ca3af;font-size:11px">Al ingresar por primera vez se te pedirá establecer tu contraseña personal.</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Change Password Screen -->
+    <div id="change-pass-screen" class="screen">
+      <div class="login-wrap">
+        <div class="login-logo">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="10" fill="#1a56db"/>
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
+          </svg>
+          <span>Reservas Backup</span>
+        </div>
+        <h1 id="cp-title">Establecer contraseña</h1>
+        <p class="login-sub" id="cp-sub">Elegí tu contraseña personal.</p>
+        <div id="cp-error" class="error-msg" style="display:none"></div>
+        <div class="form-group">
+          <label>Nueva contraseña</label>
+          <input type="password" id="cp-new" placeholder="Mínimo 6 caracteres" />
+        </div>
+        <div class="form-group">
+          <label>Confirmá la contraseña</label>
+          <input type="password" id="cp-confirm" placeholder="Repetí la contraseña" />
+        </div>
+        <button class="btn-primary" id="cp-btn" onclick="saveNewPassword()">Guardar y entrar</button>
       </div>
     </div>
 
@@ -53,6 +81,7 @@
         </div>
         <div class="nav-right">
           <div class="user-chip" id="nav-user"></div>
+          <button class="btn-logout" id="change-pass-btn" style="display:none" onclick="showChangePassword(false)">🔑 Cambiar clave</button>
           <button class="btn-logout" onclick="doLogout()">Salir</button>
         </div>
       </nav>
