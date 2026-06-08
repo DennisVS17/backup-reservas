@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservas Backup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+      <div class="login-wrap">
+        <div class="login-logo">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="10" fill="#1a56db"/>
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
+          </svg>
+          <span>Reservas Backup</span>
+        </div>
+        <h1>Iniciar sesión</h1>
+        <p class="login-sub">Ingresá con tus credenciales asignadas</p>
+        <div id="login-error" class="error-msg" style="display:none"></div>
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="login-user" placeholder="usuario" autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
+        <div class="login-hint">
+          <strong>Usuarios disponibles:</strong><br>
+          deiby / ccss2024 &nbsp;·&nbsp; sebastian / aya2024 &nbsp;·&nbsp; lorna / super2024
+        </div>
+      </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-screen" class="screen">
+      <nav class="navbar">
+        <div class="nav-left">
+          <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="10" fill="#1a56db"/>
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
+          </svg>
+          <span class="nav-title">Reservas Backup</span>
+        </div>
+        <div class="nav-right">
+          <div class="user-chip" id="nav-user"></div>
+          <button class="btn-logout" onclick="doLogout()">Salir</button>
+        </div>
+      </nav>
+
+      <div class="container">
+        <div class="main-grid">
+          <!-- Calendar -->
+          <div class="cal-section">
+            <div class="cal-header">
+              <button class="nav-arrow" onclick="changeMonth(-1)">&#8249;</button>
+              <h2 id="cal-title"></h2>
+              <button class="nav-arrow" onclick="changeMonth(1)">&#8250;</button>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+
+          <!-- Sidebar -->
+          <div class="sidebar">
+            <!-- Request form (coordinators only) -->
+            <div class="card" id="request-card">
+              <h3 class="card-title">Solicitar día</h3>
+              <div id="request-form">
+                <div class="form-group">
+                  <label>Fecha</label>
+                  <input type="date" id="req-date" />
+                </div>
+                <div class="form-group">
+                  <label>Nota <span style="color:#9ca3af">(opcional)</span></label>
+                  <input type="text" id="req-note" placeholder="Ej: Reunión de revisión" />
+                </div>
+                <button class="btn-primary" id="req-btn" onclick="submitRequest()">Solicitar día</button>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="card">
+              <h3 class="card-title">Este mes</h3>
+              <div class="stats-row">
+                <div class="stat-box blue">
+                  <div class="stat-num" id="stat-ccss">0</div>
+                  <div class="stat-lbl">CCSS</div>
+                </div>
+                <div class="stat-box green">
+                  <div class="stat-num" id="stat-aya">0</div>
+                  <div class="stat-lbl">AyA</div>
+                </div>
+                <div class="stat-box yellow">
+                  <div class="stat-num" id="stat-pend">0</div>
+                  <div class="stat-lbl">Pendientes</div>
+                </div>
+                <div class="stat-box red">
+                  <div class="stat-num" id="stat-conf">0</div>
+                  <div class="stat-lbl">Conflictos</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Requests list -->
+            <div class="card" style="flex:1">
+              <div class="card-top">
+                <h3 class="card-title">Solicitudes</h3>
+                <button class="btn-sm-approve" id="approve-all-btn" style="display:none" onclick="approveAll()">Aprobar sin conflictos</button>
+              </div>
+              <div class="req-list" id="req-list">
+                <div class="empty-state">Sin solicitudes aún</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Day Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="modal-title"></h3>
+        <button class="modal-close" onclick="closeModal()">&#10005;</button>
+      </div>
+      <div id="modal-body"></div>
+      <div class="modal-footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
