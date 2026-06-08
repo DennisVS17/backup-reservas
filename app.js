@@ -1,17 +1,23 @@
 // ============================================================
-//  USUARIOS DEL SISTEMA (login local con contraseñas genéricas)
+//  USUARIOS DEL SISTEMA
 // ============================================================
 const USERS = {
-  deiby:    { name: 'Deiby Campos',    role: 'Coordinador CCSS', project: 'ccss',  chipClass: '' },
-  sebastian:{ name: 'Sebastián Madriz',role: 'Coordinador AyA',  project: 'aya',   chipClass: 'green' },
-  lorna:    { name: 'Lorna Vega',      role: 'Supervisora',      project: 'super', chipClass: 'purple' }
+  dvalverde: { name: 'Dennis Valverde', role: 'Backup',            project: 'backup', chipClass: 'orange' },
+  deiby:     { name: 'Deiby Campos',    role: 'Coordinador CCSS',  project: 'ccss',   chipClass: '' },
+  sebastian: { name: 'Sebastián Madriz',role: 'Coordinador AyA',   project: 'aya',    chipClass: 'green' },
+  lorna:     { name: 'Lorna Vega',      role: 'Supervisora',       project: 'super',  chipClass: 'purple' }
 };
 
-const PASSWORDS = {
-  deiby: 'ccss2024',
+// Contraseñas por defecto — si el usuario tiene contraseña guardada en Supabase, esa tiene prioridad
+const DEFAULT_PASSWORDS = {
+  dvalverde: 'backup2024',
+  deiby:     'ccss2024',
   sebastian: 'aya2024',
-  lorna: 'super2024'
+  lorna:     'super2024'
 };
+
+// Usuarios que deben cambiar contraseña en el primer login
+const FIRST_LOGIN_USERS = new Set(['deiby', 'sebastian', 'lorna', 'dvalverde']);
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const DOWS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -19,7 +25,7 @@ const DOWS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 // ============================================================
 //  ESTADO
 // ============================================================
-let sb = null;       // Supabase client
+let sb = null;
 let currentUser = null;
 let requests = [];
 let viewYear  = new Date().getFullYear();
@@ -38,36 +44,153 @@ function initSupabase() {
 }
 
 // ============================================================
-//  LOGIN / LOGOUT
+//  CONTRASEÑAS — Supabase como fuente de verdad
 // ============================================================
-function doLogin() {
-  const user = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const errEl = document.getElementById('login-error');
+async function getStoredPassword(username) {
+  try {
+    const { data, error } = await sb.from('passwords').select('password, first_login').eq('username', username).single();
+    if (error || !data) return null;
+    return data;
+  } catch(e) { return null; }
+}
 
-  if (!USERS[user] || PASSWORDS[user] !== pass) {
+async function savePassword(username, password) {
+  try {
+    const { error } = await sb.from('passwords').upsert({ username, password, first_login: false }, { onConflict: 'username' });
+    if (error) throw error;
+  } catch(e) { console.error('Error guardando contraseña:', e); }
+}
+
+// ============================================================
+//  LOGIN
+// ============================================================
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass     = document.getElementById('login-pass').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+
+  if (!USERS[username]) {
+    errEl.textContent = 'Usuario no encontrado.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+
+  // Intentar obtener contraseña guardada en Supabase
+  const stored = await getStoredPassword(username);
+
+  let validPassword = false;
+  let isFirstLogin  = false;
+
+  if (stored) {
+    // Ya tiene contraseña guardada en Supabase
+    validPassword = stored.password === pass;
+    isFirstLogin  = false;
+  } else {
+    // Primera vez — usar contraseña por defecto
+    validPassword = DEFAULT_PASSWORDS[username] === pass;
+    isFirstLogin  = true;
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Entrar';
+
+  if (!validPassword) {
     errEl.textContent = 'Usuario o contraseña incorrectos.';
     errEl.style.display = 'block';
     return;
   }
 
   errEl.style.display = 'none';
-  currentUser = user;
-  sessionStorage.setItem('backup_user', user);
-  showApp();
+  currentUser = username;
+  sessionStorage.setItem('backup_user', username);
+
+  if (isFirstLogin) {
+    showChangePassword(true);
+  } else {
+    showApp();
+  }
 }
 
 function doLogout() {
   currentUser = null;
   sessionStorage.removeItem('backup_user');
   document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('change-pass-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
 }
 
+// ============================================================
+//  CAMBIO DE CONTRASEÑA
+// ============================================================
+function showChangePassword(isFirst = false) {
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('change-pass-screen').classList.add('active');
+
+  const title = document.getElementById('cp-title');
+  const sub   = document.getElementById('cp-sub');
+  if (isFirst) {
+    title.textContent = '¡Bienvenido/a, ' + USERS[currentUser].name.split(' ')[0] + '!';
+    sub.textContent   = 'Es tu primer acceso. Por favor establecé tu contraseña personal.';
+  } else {
+    title.textContent = 'Cambiar contraseña';
+    sub.textContent   = 'Ingresá tu nueva contraseña.';
+  }
+
+  document.getElementById('cp-new').value     = '';
+  document.getElementById('cp-confirm').value = '';
+  document.getElementById('cp-error').style.display = 'none';
+}
+
+async function saveNewPassword() {
+  const newPass  = document.getElementById('cp-new').value;
+  const confirm  = document.getElementById('cp-confirm').value;
+  const errEl    = document.getElementById('cp-error');
+  const btn      = document.getElementById('cp-btn');
+
+  if (newPass.length < 6) {
+    errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newPass !== confirm) {
+    errEl.textContent = 'Las contraseñas no coinciden.';
+    errEl.style.display = 'block';
+    return;
+  }
+  // No permitir usar la contraseña por defecto
+  if (newPass === DEFAULT_PASSWORDS[currentUser]) {
+    errEl.textContent = 'No podés usar la contraseña genérica. Elegí una personal.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  await savePassword(currentUser, newPass);
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar y entrar';
+
+  showToast('¡Contraseña guardada! ✓');
+  document.getElementById('change-pass-screen').classList.remove('active');
+  showApp();
+}
+
+// ============================================================
+//  MOSTRAR APP
+// ============================================================
 async function showApp() {
   document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('change-pass-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
 
   const u = USERS[currentUser];
@@ -75,12 +198,19 @@ async function showApp() {
   chip.textContent = u.name + ' · ' + u.role;
   chip.className = 'user-chip ' + u.chipClass;
 
-  // Mostrar/ocultar panel de solicitud según rol
-  const reqCard = document.getElementById('request-card');
+  // Botón cambiar contraseña siempre visible
+  document.getElementById('change-pass-btn').style.display = 'inline-block';
+
+  const reqCard      = document.getElementById('request-card');
   const approveAllBtn = document.getElementById('approve-all-btn');
+
   if (currentUser === 'lorna') {
     reqCard.style.display = 'none';
     approveAllBtn.style.display = 'inline-block';
+  } else if (currentUser === 'dvalverde') {
+    // Dennis solo ve, no solicita
+    reqCard.style.display = 'none';
+    approveAllBtn.style.display = 'none';
   } else {
     reqCard.style.display = 'block';
     approveAllBtn.style.display = 'none';
@@ -88,7 +218,6 @@ async function showApp() {
     btn.style.background = currentUser === 'deiby' ? '#1a56db' : '#057a55';
   }
 
-  // Fecha mínima
   const minDate = new Date();
   minDate.setHours(0,0,0,0);
   document.getElementById('req-date').min = minDate.toISOString().split('T')[0];
@@ -101,7 +230,6 @@ async function showApp() {
 // ============================================================
 async function loadRequests() {
   if (!sb) { requests = []; render(); return; }
-
   try {
     const { data, error } = await sb.from('reservas').select('*').order('fecha', { ascending: true });
     if (error) throw error;
@@ -118,11 +246,11 @@ async function loadRequests() {
 //  SUPABASE — GUARDAR SOLICITUD
 // ============================================================
 async function submitRequest() {
-  if (currentUser === 'lorna') return;
+  if (currentUser === 'lorna' || currentUser === 'dvalverde') return;
 
-  const dateVal  = document.getElementById('req-date').value;
-  const noteVal  = document.getElementById('req-note').value.trim();
-  const btn      = document.getElementById('req-btn');
+  const dateVal = document.getElementById('req-date').value;
+  const noteVal = document.getElementById('req-note').value.trim();
+  const btn     = document.getElementById('req-btn');
 
   if (!dateVal) { showToast('Seleccioná una fecha'); return; }
 
@@ -138,26 +266,19 @@ async function submitRequest() {
   btn.disabled = true;
   btn.textContent = 'Guardando…';
 
-  const payload = {
-    fecha:    dateVal,
-    proyecto: u.project,
-    usuario:  currentUser,
-    nombre:   u.name,
-    nota:     noteVal || null,
-    estado:   'pending'
-  };
-
   try {
-    const { error } = await sb.from('reservas').insert([payload]);
+    const { error } = await sb.from('reservas').insert([{
+      fecha: dateVal, proyecto: u.project, usuario: currentUser,
+      nombre: u.name, nota: noteVal || null, estado: 'pending'
+    }]);
     if (error) throw error;
     showToast('¡Solicitud enviada! ✓');
     document.getElementById('req-date').value = '';
-    document.getElementById('req-note').value  = '';
+    document.getElementById('req-note').value = '';
     viewYear  = y;
     viewMonth = m - 1;
     await loadRequests();
   } catch(e) {
-    console.error(e);
     showToast('Error al guardar: ' + e.message);
   } finally {
     btn.disabled = false;
@@ -179,19 +300,12 @@ async function updateStatus(id, newStatus) {
 }
 
 // ============================================================
-//  APROBAR TODAS (sin conflictos)
+//  APROBAR TODAS
 // ============================================================
 async function approveAll() {
-  const pending = requests.filter(r => r.estado === 'pending');
-  const toApprove = pending.filter(r => {
-    const same = getDayRequests(r.fecha);
-    return same.length < 2;
-  });
+  const toApprove = requests.filter(r => r.estado === 'pending' && getDayRequests(r.fecha).length < 2);
   if (!toApprove.length) { showToast('No hay solicitudes sin conflicto'); return; }
-
-  for (const r of toApprove) {
-    await updateStatus(r.id, 'approved');
-  }
+  for (const r of toApprove) await updateStatus(r.id, 'approved');
   showToast(`${toApprove.length} solicitud(es) aprobada(s) ✓`);
   await loadRequests();
 }
@@ -199,26 +313,10 @@ async function approveAll() {
 // ============================================================
 //  HELPERS
 // ============================================================
-function getDayRequests(fecha) {
-  return requests.filter(r => r.fecha === fecha);
-}
-
-function hasConflict(fecha) {
-  return getDayRequests(fecha).filter(r => r.estado !== 'rejected').length > 1;
-}
-
-function dateKey(y, m, d) {
-  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
-
-// ============================================================
-//  RENDER PRINCIPAL
-// ============================================================
-function render() {
-  renderCalendar();
-  renderRequests();
-  renderStats();
-}
+function getDayRequests(fecha) { return requests.filter(r => r.fecha === fecha); }
+function hasConflict(fecha)    { return getDayRequests(fecha).filter(r => r.estado !== 'rejected').length > 1; }
+function dateKey(y, m, d)      { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function render()              { renderCalendar(); renderRequests(); renderStats(); }
 
 // ============================================================
 //  CALENDARIO
@@ -235,20 +333,18 @@ function renderCalendar() {
     grid.appendChild(el);
   });
 
-  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+  const firstDow    = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const todayFlat = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayFlat   = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   for (let i = 0; i < firstDow; i++) {
-    const el = document.createElement('div');
-    el.className = 'cal-day empty';
-    grid.appendChild(el);
+    const el = document.createElement('div'); el.className = 'cal-day empty'; grid.appendChild(el);
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const el  = document.createElement('div');
+    const el    = document.createElement('div');
     el.className = 'cal-day';
-    const fecha = dateKey(viewYear, viewMonth, d);
+    const fecha   = dateKey(viewYear, viewMonth, d);
     const dayDate = new Date(viewYear, viewMonth, d);
 
     if (dayDate.getTime() === todayFlat.getTime()) el.classList.add('today');
@@ -264,15 +360,9 @@ function renderCalendar() {
       const dots = document.createElement('div');
       dots.className = 'dots';
       if (hasConflict(fecha)) {
-        const dot = document.createElement('div');
-        dot.className = 'dot dot-conflict';
-        dots.appendChild(dot);
+        const dot = document.createElement('div'); dot.className = 'dot dot-conflict'; dots.appendChild(dot);
       } else {
-        dr.forEach(r => {
-          const dot = document.createElement('div');
-          dot.className = 'dot dot-' + r.proyecto;
-          dots.appendChild(dot);
-        });
+        dr.forEach(r => { const dot = document.createElement('div'); dot.className = 'dot dot-' + r.proyecto; dots.appendChild(dot); });
       }
       el.appendChild(dots);
     }
@@ -288,92 +378,59 @@ function renderCalendar() {
 function openDayModal(fecha) {
   const dr = getDayRequests(fecha);
   const [y, m, d] = fecha.split('-').map(Number);
-  const label = `${d} de ${MONTHS[m-1]} de ${y}`;
-
-  document.getElementById('modal-title').textContent = '📅 ' + label;
+  document.getElementById('modal-title').textContent = '📅 ' + d + ' de ' + MONTHS[m-1] + ' de ' + y;
 
   let body = '';
-  const conflict = hasConflict(fecha);
-
-  if (conflict) {
-    body += `<div class="conflict-alert">⚠️ Conflicto: dos proyectos solicitan este día. Lorna debe elegir quién va.</div>`;
-  }
+  if (hasConflict(fecha)) body += `<div class="conflict-alert">⚠️ Conflicto: dos proyectos solicitan este día. Lorna debe elegir quién va.</div>`;
 
   if (!dr.length) {
     body = '<div style="color:#9ca3af;font-size:13px">Sin solicitudes para este día.</div>';
   } else {
     dr.forEach(r => {
-      const estado = r.estado === 'pending' ? '<span class="badge badge-pending">Pendiente</span>'
+      const estado = r.estado === 'pending'  ? '<span class="badge badge-pending">Pendiente</span>'
                    : r.estado === 'approved' ? '<span class="badge badge-approved">Aprobado</span>'
-                   : '<span class="badge badge-rejected">Rechazado</span>';
-      body += `
-        <div class="modal-req ${r.proyecto}">
-          <div style="font-weight:600;color:#1f2937">${r.nombre} ${estado}</div>
-          <div style="font-size:12px;color:#9ca3af;margin-top:2px">${r.proyecto === 'ccss' ? 'CCSS' : 'AyA'}</div>
-          ${r.nota ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${r.nota}"</div>` : ''}
-        </div>`;
+                   :                           '<span class="badge badge-rejected">Rechazado</span>';
+      body += `<div class="modal-req ${r.proyecto}">
+        <div style="font-weight:600;color:#1f2937">${r.nombre} ${estado}</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:2px">${r.proyecto === 'ccss' ? 'CCSS' : 'AyA'}</div>
+        ${r.nota ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${r.nota}"</div>` : ''}
+      </div>`;
     });
   }
 
   document.getElementById('modal-body').innerHTML = body;
-
   const footer = document.getElementById('modal-footer');
   footer.innerHTML = '';
 
   if (currentUser === 'lorna' && dr.length) {
-    if (conflict) {
-      // Elegir cuál aprobar
-      const active = dr.filter(r => r.estado !== 'rejected');
-      active.forEach(r => {
+    if (hasConflict(fecha)) {
+      dr.filter(r => r.estado !== 'rejected').forEach(r => {
         const btn = document.createElement('button');
-        btn.className = 'btn-approve';
-        btn.style.fontSize = '12px';
-        btn.textContent = `✅ Aprobar ${r.nombre.split(' ')[0]}`;
+        btn.className = 'btn-approve'; btn.style.fontSize = '12px';
+        btn.textContent = '✅ Aprobar ' + r.nombre.split(' ')[0];
         btn.onclick = async () => {
           await updateStatus(r.id, 'approved');
-          for (const other of active.filter(x => x.id !== r.id)) {
-            await updateStatus(other.id, 'rejected');
-          }
+          for (const o of dr.filter(x => x.id !== r.id)) await updateStatus(o.id, 'rejected');
           showToast('Día asignado a ' + r.nombre.split(' ')[0]);
-          await loadRequests();
-          closeModal();
+          await loadRequests(); closeModal();
         };
         footer.appendChild(btn);
       });
     } else {
       const pending = dr.filter(r => r.estado === 'pending');
       if (pending.length) {
-        const ab = document.createElement('button');
-        ab.className = 'btn-approve';
-        ab.textContent = '✅ Aprobar';
-        ab.onclick = async () => {
-          for (const r of pending) await updateStatus(r.id, 'approved');
-          showToast('Día aprobado ✓');
-          await loadRequests();
-          closeModal();
-        };
+        const ab = document.createElement('button'); ab.className = 'btn-approve'; ab.textContent = '✅ Aprobar';
+        ab.onclick = async () => { for (const r of pending) await updateStatus(r.id, 'approved'); showToast('Día aprobado ✓'); await loadRequests(); closeModal(); };
         footer.appendChild(ab);
-
-        const rb = document.createElement('button');
-        rb.className = 'btn-reject';
-        rb.textContent = '❌ Rechazar';
-        rb.onclick = async () => {
-          for (const r of pending) await updateStatus(r.id, 'rejected');
-          showToast('Día rechazado');
-          await loadRequests();
-          closeModal();
-        };
+        const rb = document.createElement('button'); rb.className = 'btn-reject'; rb.textContent = '❌ Rechazar';
+        rb.onclick = async () => { for (const r of pending) await updateStatus(r.id, 'rejected'); showToast('Día rechazado'); await loadRequests(); closeModal(); };
         footer.appendChild(rb);
       }
     }
   }
 
-  const cb = document.createElement('button');
-  cb.className = 'btn-secondary';
-  cb.textContent = 'Cerrar';
-  cb.onclick = closeModal;
+  const cb = document.createElement('button'); cb.className = 'btn-secondary'; cb.textContent = 'Cerrar'; cb.onclick = closeModal;
   footer.appendChild(cb);
-
   document.getElementById('modal').classList.add('open');
 }
 
@@ -383,51 +440,34 @@ function closeModal(e) {
 }
 
 // ============================================================
-//  LISTA DE SOLICITUDES
+//  LISTA Y STATS
 // ============================================================
 function renderRequests() {
-  const list = document.getElementById('req-list');
+  const list   = document.getElementById('req-list');
   const sorted = [...requests].sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  if (!sorted.length) {
-    list.innerHTML = '<div class="empty-state">Sin solicitudes aún</div>';
-    return;
-  }
+  if (!sorted.length) { list.innerHTML = '<div class="empty-state">Sin solicitudes aún</div>'; return; }
 
   list.innerHTML = sorted.map(r => {
-    const conflict = hasConflict(r.fecha);
-    const cls = conflict ? 'conflict' : r.proyecto;
+    const conflict  = hasConflict(r.fecha);
+    const cls       = conflict ? 'conflict' : r.proyecto;
     const [y, m, d] = r.fecha.split('-').map(Number);
-    const label = `${d} ${MONTHS[m-1]} ${y}`;
-    const badge = r.estado === 'pending'  ? 'badge-pending'
-                : r.estado === 'approved' ? 'badge-approved'
-                : 'badge-rejected';
-    const badgeTxt = r.estado === 'pending' ? 'Pendiente'
-                   : r.estado === 'approved' ? 'Aprobado' : 'Rechazado';
-    return `
-      <div class="req-item ${cls} ${r.estado === 'rejected' ? 'rejected' : ''}">
-        <div class="req-date">${label}<span class="badge ${badge}">${badgeTxt}</span></div>
-        <div class="req-meta">${r.nombre} · ${r.proyecto === 'ccss' ? 'CCSS' : 'AyA'}${conflict ? ' ⚠️' : ''}</div>
-        ${r.nota ? `<div class="req-note">"${r.nota}"</div>` : ''}
-      </div>`;
+    const badge     = r.estado === 'pending' ? 'badge-pending' : r.estado === 'approved' ? 'badge-approved' : 'badge-rejected';
+    const badgeTxt  = r.estado === 'pending' ? 'Pendiente'     : r.estado === 'approved' ? 'Aprobado'       : 'Rechazado';
+    return `<div class="req-item ${cls} ${r.estado === 'rejected' ? 'rejected' : ''}">
+      <div class="req-date">${d} ${MONTHS[m-1]} ${y}<span class="badge ${badge}">${badgeTxt}</span></div>
+      <div class="req-meta">${r.nombre} · ${r.proyecto === 'ccss' ? 'CCSS' : 'AyA'}${conflict ? ' ⚠️' : ''}</div>
+      ${r.nota ? `<div class="req-note">"${r.nota}"</div>` : ''}
+    </div>`;
   }).join('');
 }
 
-// ============================================================
-//  ESTADÍSTICAS
-// ============================================================
 function renderStats() {
-  const y = viewYear, m = viewMonth;
-  const monthKey = `${y}-${String(m+1).padStart(2,'0')}`;
-
+  const monthKey  = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
   const ccssCount = requests.filter(r => r.proyecto === 'ccss' && r.fecha.startsWith(monthKey) && r.estado !== 'rejected').length;
   const ayaCount  = requests.filter(r => r.proyecto === 'aya'  && r.fecha.startsWith(monthKey) && r.estado !== 'rejected').length;
   const pend      = requests.filter(r => r.estado === 'pending').length;
-
-  const daysInMonth = new Set(requests.filter(r => r.fecha.startsWith(monthKey)).map(r => r.fecha));
-  let conf = 0;
-  daysInMonth.forEach(f => { if (hasConflict(f)) conf++; });
-
+  const days      = new Set(requests.filter(r => r.fecha.startsWith(monthKey)).map(r => r.fecha));
+  let conf = 0; days.forEach(f => { if (hasConflict(f)) conf++; });
   document.getElementById('stat-ccss').textContent = ccssCount;
   document.getElementById('stat-aya').textContent  = ayaCount;
   document.getElementById('stat-pend').textContent = pend;
@@ -439,8 +479,7 @@ function renderStats() {
 // ============================================================
 function showToast(msg) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2600);
 }
 
@@ -448,26 +487,16 @@ function changeMonth(delta) {
   viewMonth += delta;
   if (viewMonth > 11) { viewMonth = 0; viewYear++; }
   if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
-  renderCalendar();
-  renderStats();
+  renderCalendar(); renderStats();
 }
 
 // Enter en login
-document.getElementById('login-pass').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('login-user').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('login-pass').focus();
-});
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
 
 // ============================================================
 //  ARRANQUE
 // ============================================================
 initSupabase();
-
-// Restaurar sesión si existe
 const savedUser = sessionStorage.getItem('backup_user');
-if (savedUser && USERS[savedUser]) {
-  currentUser = savedUser;
-  showApp();
-}
+if (savedUser && USERS[savedUser]) { currentUser = savedUser; showApp(); }
