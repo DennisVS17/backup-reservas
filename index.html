@@ -209,8 +209,8 @@
   </div>
 
   <!-- Day Modal -->
-  <div class="modal-overlay" id="modal" onclick="closeModal(event)" role="dialog" aria-modal="true">
-    <div class="modal-box">
+<div class="modal-overlay" id="modal" onclick="closeModal(event)" role="dialog" aria-modal="true">
+  <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-head">
         <h3 id="modal-title"></h3>
         <button type="button" class="modal-close" onclick="closeModal()">&#10005;</button>
