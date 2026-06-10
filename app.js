@@ -16,7 +16,6 @@ const DEFAULT_PASSWORDS = {
   lorna:     'super2024'
 };
 
-// Usuarios que deben cambiar contraseña en el primer login
 const FIRST_LOGIN_USERS = new Set(['deiby', 'sebastian', 'lorna', 'dvalverde']);
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -44,7 +43,7 @@ function initSupabase() {
 }
 
 // ============================================================
-//  CONTRASEÑAS — Supabase como fuente de verdad
+//  CONTRASEÑAS
 // ============================================================
 async function getStoredPassword(username) {
   try {
@@ -226,11 +225,9 @@ async function showApp() {
   if (currentUser === 'lorna') {
     if (reqCard) reqCard.style.display = 'none';
     if (approveAllBtn) approveAllBtn.style.display = 'inline-block';
-
   } else if (currentUser === 'dvalverde') {
     if (reqCard) reqCard.style.display = 'none';
     if (approveAllBtn) approveAllBtn.style.display = 'none';
-
   } else {
     if (reqCard) reqCard.style.display = 'block';
     if (approveAllBtn) approveAllBtn.style.display = 'none';
@@ -371,18 +368,25 @@ async function updateStatus(id, newStatus) {
 // ============================================================
 async function updateRequestDetails(id, newFecha, newNota) {
   try {
-    const { error } = await sb
+    const { data, error } = await sb
       .from('reservas')
       .update({
         fecha: newFecha,
         nota: newNota || null
       })
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) throw error;
 
+    if (!data || !data.length) {
+      showToast('No se actualizó. Revisá permisos de Supabase.');
+      return false;
+    }
+
     showToast('Solicitud actualizada ✓');
     await loadRequests();
+    return true;
   } catch(e) {
     showToast('Error al editar: ' + e.message);
     throw e;
@@ -391,15 +395,22 @@ async function updateRequestDetails(id, newFecha, newNota) {
 
 async function deleteRequest(id) {
   try {
-    const { error } = await sb
+    const { data, error } = await sb
       .from('reservas')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) throw error;
 
+    if (!data || !data.length) {
+      showToast('No se eliminó. Revisá permisos/RLS en Supabase.');
+      return false;
+    }
+
     showToast('Solicitud eliminada ✓');
     await loadRequests();
+    return true;
   } catch(e) {
     showToast('Error al eliminar: ' + e.message);
     throw e;
@@ -407,7 +418,7 @@ async function deleteRequest(id) {
 }
 
 async function editRequestPrompt(id) {
-  const r = requests.find(x => x.id === id);
+  const r = requests.find(x => String(x.id) === String(id));
 
   if (!r) {
     showToast('No se encontró la solicitud');
@@ -442,7 +453,7 @@ async function editRequestPrompt(id) {
   }
 
   const duplicate = requests.find(x =>
-    x.id !== id &&
+    String(x.id) !== String(id) &&
     x.fecha === nuevaFecha &&
     x.proyecto === r.proyecto &&
     x.estado !== 'rejected'
@@ -457,12 +468,15 @@ async function editRequestPrompt(id) {
 
   if (nuevaNota === null) return;
 
-  await updateRequestDetails(id, nuevaFecha, nuevaNota.trim());
-  closeModal();
+  const updated = await updateRequestDetails(id, nuevaFecha, nuevaNota.trim());
+
+  if (updated) {
+    closeModal();
+  }
 }
 
 async function deleteRequestConfirm(id) {
-  const r = requests.find(x => x.id === id);
+  const r = requests.find(x => String(x.id) === String(id));
 
   if (!r) {
     showToast('No se encontró la solicitud');
@@ -478,8 +492,11 @@ async function deleteRequestConfirm(id) {
 
   if (!ok) return;
 
-  await deleteRequest(id);
-  closeModal();
+  const deleted = await deleteRequest(id);
+
+  if (deleted) {
+    closeModal();
+  }
 }
 
 // ============================================================
@@ -538,6 +555,25 @@ function canManageRequest(r) {
     currentUser === 'dvalverde' ||
     currentUser === 'lorna'
   );
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function escapeJs(value) {
+  if (value === null || value === undefined) return '';
+
+  return String(value)
+    .replaceAll('\\', '\\\\')
+    .replaceAll("'", "\\'");
 }
 
 function render() {
@@ -751,20 +787,21 @@ function openDayModal(fecha) {
             : '<span class="badge badge-rejected">Rechazado</span>';
 
       const puedeGestionar = canManageRequest(r);
+      const safeId = escapeJs(r.id);
 
       body += `
-        <div class="modal-req ${r.proyecto}">
+        <div class="modal-req ${escapeHtml(r.proyecto)}">
           <div style="font-weight:600;color:#1f2937">
-            ${r.nombre} ${estado}
+            ${escapeHtml(r.nombre)} ${estado}
           </div>
 
           <div style="font-size:12px;color:#9ca3af;margin-top:2px">
-            ${getProjectLabel(r.proyecto)}
+            ${escapeHtml(getProjectLabel(r.proyecto))}
           </div>
 
           ${
             r.nota
-              ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${r.nota}"</div>`
+              ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${escapeHtml(r.nota)}"</div>`
               : `<div style="font-size:12px;color:#9ca3af;margin-top:4px;font-style:italic">Sin motivo indicado</div>`
           }
 
@@ -772,10 +809,10 @@ function openDayModal(fecha) {
             puedeGestionar
               ? `
                 <div class="modal-actions-row">
-                  <button type="button" class="btn-edit" onclick="editRequestPrompt(${r.id})">
+                  <button type="button" class="btn-edit" onclick="editRequestPrompt('${safeId}')">
                     ✏️ Editar
                   </button>
-                  <button type="button" class="btn-delete" onclick="deleteRequestConfirm(${r.id})">
+                  <button type="button" class="btn-delete" onclick="deleteRequestConfirm('${safeId}')">
                     🗑️ Eliminar
                   </button>
                 </div>
@@ -913,17 +950,17 @@ function renderRequests() {
           : 'Rechazado';
 
     return `
-      <div class="req-item ${cls} ${r.estado === 'rejected' ? 'rejected' : ''}">
+      <div class="req-item ${escapeHtml(cls)} ${r.estado === 'rejected' ? 'rejected' : ''}">
         <div class="req-date">
           ${d} ${MONTHS[m-1]} ${y}
           <span class="badge ${badge}">${badgeTxt}</span>
         </div>
         <div class="req-meta">
-          ${r.nombre} · ${getProjectLabel(r.proyecto)}${conflict ? ' ⚠️' : ''}
+          ${escapeHtml(r.nombre)} · ${escapeHtml(getProjectLabel(r.proyecto))}${conflict ? ' ⚠️' : ''}
         </div>
         ${
           r.nota
-            ? `<div class="req-note">"${r.nota}"</div>`
+            ? `<div class="req-note">"${escapeHtml(r.nota)}"</div>`
             : ''
         }
       </div>
@@ -1006,28 +1043,4 @@ function changeMonth(delta) {
 const loginPassInput = document.getElementById('login-pass');
 const loginUserInput = document.getElementById('login-user');
 
-if (loginPassInput) {
-  loginPassInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
-}
-
-if (loginUserInput) {
-  loginUserInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      document.getElementById('login-pass').focus();
-    }
-  });
-}
-
-// ============================================================
-//  ARRANQUE
-// ============================================================
-initSupabase();
-
-const savedUser = sessionStorage.getItem('backup_user');
-
-if (savedUser && USERS[savedUser]) {
-  currentUser = savedUser;
-  showApp();
-}
+if (loginPassInput)
