@@ -175,6 +175,33 @@ body {
   white-space: nowrap;
 }
 
+.btn-edit {
+  padding: 5px 10px;
+  background: var(--blue-light);
+  color: var(--blue);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-delete {
+  padding: 5px 10px;
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-edit:hover { background: #dbeafe; }
+.btn-delete:hover { background: #fee2e2; }
+
 /* Error */
 .error-msg {
   background: var(--red-light);
@@ -318,7 +345,7 @@ body {
 }
 
 .cal-day {
-  min-height: 65px;
+  min-height: 74px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--gray-200);
   padding: 5px 6px;
@@ -368,7 +395,6 @@ body {
 
 .cal-day.today .day-num { color: var(--blue); }
 
-/* Visual institution days */
 .cal-day.ccss-day {
   background: var(--blue-light);
   border-color: var(--blue);
@@ -400,7 +426,6 @@ body {
 .cal-day.aya-day::after { background: var(--green); }
 .cal-day.conflict-day::after { background: var(--red); }
 
-/* Tooltip */
 .cal-day[data-tooltip]:hover::before {
   content: attr(data-tooltip);
   position: absolute;
@@ -416,6 +441,33 @@ body {
   pointer-events: none;
   z-index: 30;
 }
+
+.day-preview {
+  margin-top: 5px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  color: var(--gray-600);
+  overflow: hidden;
+}
+
+.day-preview-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-preview-note {
+  margin-top: 2px;
+  color: var(--gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-day.ccss-day .day-preview-name { color: var(--blue); }
+.cal-day.aya-day .day-preview-name { color: var(--green); }
+.cal-day.conflict-day .day-preview-name { color: var(--red); }
 
 .dots {
   display: flex;
@@ -624,7 +676,7 @@ body {
   background: var(--white);
   border-radius: var(--radius);
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
   box-shadow: var(--shadow-md);
 }
 
@@ -693,6 +745,19 @@ body {
   background: #f0fdf4;
 }
 
+.modal-actions-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.edit-help-text {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
 /* Toast */
 .toast {
   position: fixed;
@@ -721,93 +786,3 @@ body {
   color: var(--gray-400);
   font-size: 13px;
 }
-/* Loading */
-.loading {
-  text-align: center;
-  padding: 2rem;
-  color: var(--gray-400);
-  font-size: 13px;
-}
-
-/* ===== INFORMACIÓN DENTRO DEL DÍA DEL CALENDARIO ===== */
-
-.day-preview {
-  margin-top: 5px;
-  font-size: 10.5px;
-  line-height: 1.25;
-  color: var(--gray-600);
-  overflow: hidden;
-}
-
-.day-preview-name {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.day-preview-note {
-  margin-top: 2px;
-  color: var(--gray-400);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cal-day.ccss-day .day-preview-name {
-  color: var(--blue);
-}
-
-.cal-day.aya-day .day-preview-name {
-  color: var(--green);
-}
-
-.cal-day.conflict-day .day-preview-name {
-  color: var(--red);
-}
-
-.modal-actions-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.btn-edit {
-  padding: 5px 10px;
-  background: var(--blue-light);
-  color: var(--blue);
-  border: 1px solid #bfdbfe;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-delete {
-  padding: 5px 10px;
-  background: var(--red-light);
-  color: var(--red);
-  border: 1px solid #fca5a5;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.btn-edit:hover {
-  background: #dbeafe;
-}
-
-.btn-delete:hover {
-  background: #fee2e2;
-}
-
-.edit-help-text {
-  font-size: 11px;
-  color: var(--gray-400);
-  margin-top: 4px;
-}
-``
