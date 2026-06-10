@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reservas Backup</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reservas Backup</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css" />
 
 </head>
 
@@ -15,219 +13,116 @@
 
 <div id="app">
 
-  <!-- LOGIN -->
-  <section id="login-screen" class="screen active">
-    <div class="login-wrap">
+<!-- LOGIN -->
+<section id="login-screen" class="screen active">
+  <div class="login-wrap">
+    <h1>Iniciar sesión</h1>
 
-      <div class="login-logo">
-        <span>Reservas Backup</span>
-      </div>
+    <div id="login-error" class="error-msg" style="display:none"></div>
 
-      <h1>Iniciar sesión</h1>
-      <p class="login-sub">Ingresá con tus credenciales</p>
-
-      <div id="login-error" class="error-msg" style="display:none"></div>
-
-      <div class="form-group">
-        <label for="login-user">Usuario</label>
-        <input type="text" id="login-user" placeholder="usuario" required />
-      </div>
-
-      <div class="form-group">
-        <label for="login-pass">Contraseña</label>
-        <input type="password" id="login-pass" placeholder="••••••••" required />
-      </div>
-
-      <button type="button" class="btn-primary" onclick="doLogin()">Entrar</button>
-
-    </div>
-  </section>
-
-  <!-- CHANGE PASSWORD -->
-  <section id="change-pass-screen" class="screen">
-
-    <div class="login-wrap">
-
-      <h1>Establecer contraseña</h1>
-      <p class="login-sub">Elegí tu contraseña personal</p>
-
-      <div id="cp-error" class="error-msg" style="display:none"></div>
-
-      <div class="form-group">
-        <label for="cp-new">Nueva contraseña</label>
-        <input type="password" id="cp-new" required />
-      </div>
-
-      <div class="form-group">
-        <label for="cp-confirm">Confirmar contraseña</label>
-        <input type="password" id="cp-confirm" required />
-      </div>
-
-      <button type="button" class="btn-primary" onclick="saveNewPassword()">Guardar</button>
-
+    <div class="form-group">
+      <label>Usuario</label>
+      <input type="text" id="login-user" required>
     </div>
 
-  </section>
-
-  <!-- APP -->
-  <section id="app-screen" class="screen">
-
-    <!-- NAV -->
-    <header class="navbar">
-
-      <div class="nav-left">
-        <span class="nav-title">Reservas Backup</span>
-      </div>
-
-      <div class="nav-right">
-        <div id="nav-user" class="user-chip"></div>
-
-        <button type="button" class="btn-logout" onclick="showChangePassword(false)">
-          🔑 Cambiar clave
-        </button>
-
-        <button type="button" class="btn-logout" onclick="doLogout()">
-          Salir
-        </button>
-      </div>
-
-    </header>
-
-    <!-- MAIN -->
-    <main class="container">
-
-      <div class="main-grid">
-
-        <!-- CALENDARIO -->
-        <section class="cal-section">
-
-          <div class="cal-header">
-            <button type="button" onclick="changeMonth(-1)">‹</button>
-            <h2 id="cal-title"></h2>
-            <button type="button" onclick="changeMonth(1)">›</button>
-          </div>
-
-          <div id="cal-grid" class="cal-grid"></div>
-
-        </section>
-
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-
-          <!-- HOY -->
-          <div class="card">
-            <h3 class="card-title">Hoy estás en</h3>
-            <div id="today-location" class="status-indicator">
-              Sin asignación
-            </div>
-          </div>
-
-          <!-- FILTRO -->
-          <div class="card">
-            <h3 class="card-title">Ver por usuario</h3>
-            <select id="user-filter">
-              <option value="all">Todos</option>
-            </select>
-          </div>
-
-          <!-- SOLICITAR -->
-          <div class="card" id="request-card">
-
-            <h3 class="card-title">Solicitar día</h3>
-
-            <div class="form-group">
-              <label for="req-date">Fecha</label>
-              <input type="date" id="req-date" required />
-            </div>
-
-            <div class="form-group">
-              <label for="req-note">Nota</label>
-              <input type="text" id="req-note" />
-            </div>
-
-            <button type="button" class="btn-primary" onclick="submitRequest()">
-              Solicitar
-            </button>
-
-          </div>
-
-          <!-- ESTADÍSTICAS -->
-          <div class="card">
-
-            <h3 class="card-title">Este mes</h3>
-
-            <div class="stats-row">
-
-              <div class="stat-box blue">
-                <div id="stat-ccss" class="stat-num">0</div>
-                <div>CCSS</div>
-              </div>
-
-              <div class="stat-box green">
-                <div id="stat-aya" class="stat-num">0</div>
-                <div>AyA</div>
-              </div>
-
-              <div class="stat-box yellow">
-                <div id="stat-pend" class="stat-num">0</div>
-                <div>Pendientes</div>
-              </div>
-
-              <div class="stat-box red">
-                <div id="stat-conf" class="stat-num">0</div>
-                <div>Conflictos</div>
-              </div>
-
-            </div>
-
-          </div>
-
-          <!-- LISTA -->
-          <div class="card">
-
-            <h3 class="card-title">Solicitudes</h3>
-
-            <button type="button" onclick="approveAll()">
-              Aprobar sin conflictos
-            </button>
-
-            <div id="req-list" class="req-list">
-              <div class="empty-state">Sin solicitudes</div>
-            </div>
-
-          </div>
-
-        </aside>
-
-      </div>
-
-    </main>
-
-  </section>
-
-</div>
-
-<!-- MODAL -->
-<div id="modal" class="modal-overlay" onclick="closeModal(event)" role="dialog">
-
-  <div class="modal-box">
-
-    <div class="modal-head">
-      <h3 id="modal-title"></h3>
-      <button type="button" onclick="closeModal()">✕</button>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" required>
     </div>
 
-    <div id="modal-body"></div>
-    <div id="modal-footer"></div>
+    <button id="login-btn" class="btn-primary" onclick="doLogin()">Entrar</button>
+  </div>
+</section>
 
+<!-- CAMBIO PASSWORD -->
+<section id="change-pass-screen" class="screen">
+  <div class="login-wrap">
+
+    <h1 id="cp-title">Cambiar contraseña</h1>
+    <p id="cp-sub"></p>
+
+    <div id="cp-error" class="error-msg" style="display:none"></div>
+
+    <div class="form-group">
+      <label>Nueva contraseña</label>
+      <input type="password" id="cp-new">
+    </div>
+
+    <div class="form-group">
+      <label>Confirmar contraseña</label>
+      <input type="password" id="cp-confirm">
+    </div>
+
+    <button id="cp-btn" class="btn-primary" onclick="saveNewPassword()">Guardar</button>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app-screen" class="screen">
+
+<header class="navbar">
+  <div class="nav-left">
+    <span class="nav-title">Reservas Backup</span>
   </div>
 
+  <div class="nav-right">
+    <div id="nav-user" class="user-chip"></div>
+    <button onclick="showChangePassword(false)" class="btn-logout">🔑</button>
+    <button onclick="doLogout()" class="btn-logout">Salir</button>
+  </div>
+</header>
+
+<main class="container">
+
+<div class="main-grid">
+
+<!-- CAL -->
+<section class="cal-section">
+  <div class="cal-header">
+    <button onclick="changeMonth(-1)">‹</button>
+    <h2 id="cal-title"></h2>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+
+  <div id="cal-grid" class="cal-grid"></div>
+</section>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+<div class="card">
+  <h3 class="card-title">Hoy estás en</h3>
+  <div id="today-location" class="status-indicator status-none">Sin asignación</div>
 </div>
 
-<!-- TOAST -->
-<div id="toast" class="toast" role="alert"></div>
+<div class="card">
+  <h3 class="card-title">Solicitar día</h3>
+  <input type="date" id="req-date">
+  <input type="text" id="req-note" placeholder="Nota">
+  <button id="req-btn" onclick="submitRequest()" class="btn-primary">Solicitar</button>
+</div>
 
-<!-- SCRIPTS -->
+<div class="card">
+  <h3 class="card-title">Solicitudes</h3>
+  <div id="req-list"></div>
+</div>
+
+</aside>
+
+</div>
+</main>
+</section>
+</div>
+
+<div id="modal" class="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-box">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
