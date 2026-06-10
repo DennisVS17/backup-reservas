@@ -367,6 +367,122 @@ async function updateStatus(id, newStatus) {
 }
 
 // ============================================================
+//  SUPABASE — EDITAR Y ELIMINAR SOLICITUD
+// ============================================================
+async function updateRequestDetails(id, newFecha, newNota) {
+  try {
+    const { error } = await sb
+      .from('reservas')
+      .update({
+        fecha: newFecha,
+        nota: newNota || null
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    showToast('Solicitud actualizada ✓');
+    await loadRequests();
+  } catch(e) {
+    showToast('Error al editar: ' + e.message);
+    throw e;
+  }
+}
+
+async function deleteRequest(id) {
+  try {
+    const { error } = await sb
+      .from('reservas')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    showToast('Solicitud eliminada ✓');
+    await loadRequests();
+  } catch(e) {
+    showToast('Error al eliminar: ' + e.message);
+    throw e;
+  }
+}
+
+async function editRequestPrompt(id) {
+  const r = requests.find(x => x.id === id);
+
+  if (!r) {
+    showToast('No se encontró la solicitud');
+    return;
+  }
+
+  if (!canManageRequest(r)) {
+    showToast('No tenés permiso para editar esta solicitud');
+    return;
+  }
+
+  const nuevaFecha = prompt('Nueva fecha en formato YYYY-MM-DD:', r.fecha);
+
+  if (nuevaFecha === null) return;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nuevaFecha)) {
+    showToast('Formato de fecha inválido. Usá YYYY-MM-DD');
+    return;
+  }
+
+  const [y, m, d] = nuevaFecha.split('-').map(Number);
+  const dateObj = new Date(y, m - 1, d);
+
+  if (
+    Number.isNaN(dateObj.getTime()) ||
+    dateObj.getFullYear() !== y ||
+    dateObj.getMonth() !== m - 1 ||
+    dateObj.getDate() !== d
+  ) {
+    showToast('Fecha inválida');
+    return;
+  }
+
+  const duplicate = requests.find(x =>
+    x.id !== id &&
+    x.fecha === nuevaFecha &&
+    x.proyecto === r.proyecto &&
+    x.estado !== 'rejected'
+  );
+
+  if (duplicate) {
+    showToast('Ya existe una solicitud activa de ese proyecto para esa fecha');
+    return;
+  }
+
+  const nuevaNota = prompt('Motivo o nota:', r.nota || '');
+
+  if (nuevaNota === null) return;
+
+  await updateRequestDetails(id, nuevaFecha, nuevaNota.trim());
+  closeModal();
+}
+
+async function deleteRequestConfirm(id) {
+  const r = requests.find(x => x.id === id);
+
+  if (!r) {
+    showToast('No se encontró la solicitud');
+    return;
+  }
+
+  if (!canManageRequest(r)) {
+    showToast('No tenés permiso para eliminar esta solicitud');
+    return;
+  }
+
+  const ok = confirm('¿Seguro que querés eliminar esta solicitud?');
+
+  if (!ok) return;
+
+  await deleteRequest(id);
+  closeModal();
+}
+
+// ============================================================
 //  APROBAR TODAS
 // ============================================================
 async function approveAll() {
@@ -409,6 +525,19 @@ function getProjectLabel(project) {
   if (project === 'ccss') return 'CCSS';
   if (project === 'aya') return 'AyA';
   return project;
+}
+
+function cortarTexto(texto, limite = 30) {
+  if (!texto) return '';
+  return texto.length > limite ? texto.substring(0, limite) + '…' : texto;
+}
+
+function canManageRequest(r) {
+  return (
+    currentUser === r.usuario ||
+    currentUser === 'dvalverde' ||
+    currentUser === 'lorna'
+  );
 }
 
 function render() {
@@ -521,11 +650,45 @@ function renderCalendar() {
         'data-tooltip',
         `${dr[0].nombre} · ${getProjectLabel(proyecto)} · ${dr[0].estado === 'approved' ? 'Aprobado' : 'Pendiente'}`
       );
+
+      const preview = document.createElement('div');
+      preview.className = 'day-preview';
+
+      const name = document.createElement('div');
+      name.className = 'day-preview-name';
+      name.textContent = dr[0].nombre.split(' ')[0] + ' · ' + getProjectLabel(dr[0].proyecto);
+
+      const note = document.createElement('div');
+      note.className = 'day-preview-note';
+      note.textContent = dr[0].nota ? cortarTexto(dr[0].nota, 22) : 'Sin motivo';
+
+      preview.appendChild(name);
+      preview.appendChild(note);
+      el.appendChild(preview);
     }
 
     if (dr.length > 1) {
       el.classList.add('conflict-day');
       el.setAttribute('data-tooltip', '⚠️ Conflicto: varias solicitudes este día');
+
+      const preview = document.createElement('div');
+      preview.className = 'day-preview';
+
+      dr.slice(0, 2).forEach(r => {
+        const name = document.createElement('div');
+        name.className = 'day-preview-name';
+        name.textContent = r.nombre.split(' ')[0] + ' · ' + getProjectLabel(r.proyecto);
+        preview.appendChild(name);
+      });
+
+      if (dr.length > 2) {
+        const more = document.createElement('div');
+        more.className = 'day-preview-note';
+        more.textContent = '+' + (dr.length - 2) + ' más';
+        preview.appendChild(more);
+      }
+
+      el.appendChild(preview);
     }
 
     if (dr.length) {
@@ -587,17 +750,39 @@ function openDayModal(fecha) {
             ? '<span class="badge badge-approved">Aprobado</span>'
             : '<span class="badge badge-rejected">Rechazado</span>';
 
+      const puedeGestionar = canManageRequest(r);
+
       body += `
         <div class="modal-req ${r.proyecto}">
           <div style="font-weight:600;color:#1f2937">
             ${r.nombre} ${estado}
           </div>
+
           <div style="font-size:12px;color:#9ca3af;margin-top:2px">
             ${getProjectLabel(r.proyecto)}
           </div>
+
           ${
             r.nota
               ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${r.nota}"</div>`
+              : `<div style="font-size:12px;color:#9ca3af;margin-top:4px;font-style:italic">Sin motivo indicado</div>`
+          }
+
+          ${
+            puedeGestionar
+              ? `
+                <div class="modal-actions-row">
+                  <button type="button" class="btn-edit" onclick="editRequestPrompt(${r.id})">
+                    ✏️ Editar
+                  </button>
+                  <button type="button" class="btn-delete" onclick="deleteRequestConfirm(${r.id})">
+                    🗑️ Eliminar
+                  </button>
+                </div>
+                <div class="edit-help-text">
+                  Podés editar fecha o motivo si hubo un error.
+                </div>
+              `
               : ''
           }
         </div>
@@ -614,6 +799,7 @@ function openDayModal(fecha) {
     if (hasConflict(fecha)) {
       dr.filter(r => r.estado !== 'rejected').forEach(r => {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = 'btn-approve';
         btn.style.fontSize = '12px';
         btn.textContent = '✅ Aprobar ' + r.nombre.split(' ')[0];
@@ -637,6 +823,7 @@ function openDayModal(fecha) {
 
       if (pending.length) {
         const ab = document.createElement('button');
+        ab.type = 'button';
         ab.className = 'btn-approve';
         ab.textContent = '✅ Aprobar';
 
@@ -653,6 +840,7 @@ function openDayModal(fecha) {
         footer.appendChild(ab);
 
         const rb = document.createElement('button');
+        rb.type = 'button';
         rb.className = 'btn-reject';
         rb.textContent = '❌ Rechazar';
 
@@ -672,9 +860,10 @@ function openDayModal(fecha) {
   }
 
   const cb = document.createElement('button');
+  cb.type = 'button';
   cb.className = 'btn-secondary';
   cb.textContent = 'Cerrar';
-  cb.onclick = closeModal;
+  cb.onclick = () => closeModal();
 
   footer.appendChild(cb);
 
@@ -682,8 +871,13 @@ function openDayModal(fecha) {
 }
 
 function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal')) return;
-  document.getElementById('modal').classList.remove('open');
+  const modal = document.getElementById('modal');
+
+  if (!modal) return;
+
+  if (e && e.target !== modal) return;
+
+  modal.classList.remove('open');
 }
 
 // ============================================================
