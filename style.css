@@ -1,841 +1,724 @@
-// ============================================================
-//  USUARIOS DEL SISTEMA
-// ============================================================
-const USERS = {
-  dvalverde: { name: 'Dennis Valverde', role: 'Backup',            project: 'backup', chipClass: 'orange' },
-  deiby:     { name: 'Deiby Campos',    role: 'Coordinador CCSS',  project: 'ccss',   chipClass: '' },
-  sebastian: { name: 'Sebastián Madriz',role: 'Coordinador AyA',   project: 'aya',    chipClass: 'green' },
-  lorna:     { name: 'Lorna Vega',      role: 'Supervisora',       project: 'super',  chipClass: 'purple' }
-};
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-// Contraseñas por defecto — si el usuario tiene contraseña guardada en Supabase, esa tiene prioridad
-const DEFAULT_PASSWORDS = {
-  dvalverde: 'backup2024',
-  deiby:     'ccss2024',
-  sebastian: 'aya2024',
-  lorna:     'super2024'
-};
-
-// Usuarios que deben cambiar contraseña en el primer login
-const FIRST_LOGIN_USERS = new Set(['deiby', 'sebastian', 'lorna', 'dvalverde']);
-
-const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DOWS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-
-// ============================================================
-//  ESTADO
-// ============================================================
-let sb = null;
-let currentUser = null;
-let requests = [];
-let viewYear  = new Date().getFullYear();
-let viewMonth = new Date().getMonth();
-const today   = new Date();
-
-// ============================================================
-//  INIT SUPABASE
-// ============================================================
-function initSupabase() {
-  try {
-    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch(e) {
-    console.error('Error iniciando Supabase:', e);
-  }
+:root {
+  --blue: #1a56db;
+  --blue-light: #ebf0fd;
+  --blue-dark: #1040a8;
+  --green: #057a55;
+  --green-light: #def7ec;
+  --red: #c81e1e;
+  --red-light: #fde8e8;
+  --yellow-light: #fef3c7;
+  --yellow: #92400e;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-400: #9ca3af;
+  --gray-600: #4b5563;
+  --gray-800: #1f2937;
+  --white: #ffffff;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.1);
 }
 
-// ============================================================
-//  CONTRASEÑAS — Supabase como fuente de verdad
-// ============================================================
-async function getStoredPassword(username) {
-  try {
-    const { data, error } = await sb
-      .from('passwords')
-      .select('password, first_login')
-      .eq('username', username)
-      .single();
-
-    if (error || !data) return null;
-    return data;
-  } catch(e) {
-    return null;
-  }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
 }
 
-async function savePassword(username, password) {
-  try {
-    const { error } = await sb
-      .from('passwords')
-      .upsert(
-        { username, password, first_login: false },
-        { onConflict: 'username' }
-      );
+/* Screens */
+.screen { display: none; }
+.screen.active { display: block; }
 
-    if (error) throw error;
-  } catch(e) {
-    console.error('Error guardando contraseña:', e);
-  }
+/* Login */
+.login-wrap {
+  max-width: 400px;
+  margin: 80px auto;
+  background: var(--white);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
 }
 
-// ============================================================
-//  LOGIN
-// ============================================================
-async function doLogin() {
-  const username = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass     = document.getElementById('login-pass').value;
-  const errEl    = document.getElementById('login-error');
-  const btn      = document.getElementById('login-btn');
-
-  if (!USERS[username]) {
-    errEl.textContent = 'Usuario no encontrado.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Verificando…';
-
-  const stored = await getStoredPassword(username);
-
-  let validPassword = false;
-  let isFirstLogin  = false;
-
-  if (stored) {
-    validPassword = stored.password === pass;
-    isFirstLogin  = false;
-  } else {
-    validPassword = DEFAULT_PASSWORDS[username] === pass;
-    isFirstLogin  = true;
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Entrar';
-
-  if (!validPassword) {
-    errEl.textContent = 'Usuario o contraseña incorrectos.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  errEl.style.display = 'none';
-  currentUser = username;
-  sessionStorage.setItem('backup_user', username);
-
-  if (isFirstLogin) {
-    showChangePassword(true);
-  } else {
-    showApp();
-  }
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 1.75rem;
 }
 
-function doLogout() {
-  currentUser = null;
-  sessionStorage.removeItem('backup_user');
+.login-wrap h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+.login-sub { font-size: 14px; color: var(--gray-400); margin-bottom: 1.5rem; }
 
-  document.getElementById('app-screen').classList.remove('active');
-  document.getElementById('change-pass-screen').classList.remove('active');
-  document.getElementById('login-screen').classList.add('active');
-
-  document.getElementById('login-user').value = '';
-  document.getElementById('login-pass').value = '';
+.login-hint {
+  margin-top: 1.5rem;
+  padding: 12px 14px;
+  background: var(--gray-100);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--gray-600);
+  line-height: 1.8;
 }
 
-// ============================================================
-//  CAMBIO DE CONTRASEÑA
-// ============================================================
-function showChangePassword(isFirst = false) {
-  document.getElementById('login-screen').classList.remove('active');
-  document.getElementById('app-screen').classList.remove('active');
-  document.getElementById('change-pass-screen').classList.add('active');
+/* Forms */
+.form-group { margin-bottom: 1rem; }
 
-  const title = document.getElementById('cp-title');
-  const sub   = document.getElementById('cp-sub');
-
-  if (isFirst) {
-    title.textContent = '¡Bienvenido/a, ' + USERS[currentUser].name.split(' ')[0] + '!';
-    sub.textContent   = 'Es tu primer acceso. Por favor establecé tu contraseña personal.';
-  } else {
-    title.textContent = 'Cambiar contraseña';
-    sub.textContent   = 'Ingresá tu nueva contraseña.';
-  }
-
-  document.getElementById('cp-new').value     = '';
-  document.getElementById('cp-confirm').value = '';
-  document.getElementById('cp-error').style.display = 'none';
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-bottom: 5px;
 }
 
-async function saveNewPassword() {
-  const newPass  = document.getElementById('cp-new').value;
-  const confirm  = document.getElementById('cp-confirm').value;
-  const errEl    = document.getElementById('cp-error');
-  const btn      = document.getElementById('cp-btn');
-
-  if (newPass.length < 6) {
-    errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if (newPass !== confirm) {
-    errEl.textContent = 'Las contraseñas no coinciden.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if (newPass === DEFAULT_PASSWORDS[currentUser]) {
-    errEl.textContent = 'No podés usar la contraseña genérica. Elegí una personal.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  errEl.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Guardando…';
-
-  await savePassword(currentUser, newPass);
-
-  btn.disabled = false;
-  btn.textContent = 'Guardar y entrar';
-
-  showToast('¡Contraseña guardada! ✓');
-  document.getElementById('change-pass-screen').classList.remove('active');
-  showApp();
+.form-group input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--gray-800);
+  transition: border-color .15s;
 }
 
-// ============================================================
-//  MOSTRAR APP
-// ============================================================
-async function showApp() {
-  document.getElementById('login-screen').classList.remove('active');
-  document.getElementById('change-pass-screen').classList.remove('active');
-  document.getElementById('app-screen').classList.add('active');
-
-  const u = USERS[currentUser];
-  const chip = document.getElementById('nav-user');
-
-  chip.textContent = u.name + ' · ' + u.role;
-  chip.className = 'user-chip ' + u.chipClass;
-
-  const changePassBtn = document.getElementById('change-pass-btn');
-  if (changePassBtn) {
-    changePassBtn.style.display = 'inline-block';
-  }
-
-  const reqCard       = document.getElementById('request-card');
-  const approveAllBtn = document.getElementById('approve-all-btn');
-
-  if (currentUser === 'lorna') {
-    if (reqCard) reqCard.style.display = 'none';
-    if (approveAllBtn) approveAllBtn.style.display = 'inline-block';
-
-  } else if (currentUser === 'dvalverde') {
-    if (reqCard) reqCard.style.display = 'none';
-    if (approveAllBtn) approveAllBtn.style.display = 'none';
-
-  } else {
-    if (reqCard) reqCard.style.display = 'block';
-    if (approveAllBtn) approveAllBtn.style.display = 'none';
-
-    const btn = document.getElementById('req-btn');
-    if (btn) {
-      btn.style.background = currentUser === 'deiby' ? '#1a56db' : '#057a55';
-    }
-  }
-
-  const reqDate = document.getElementById('req-date');
-  if (reqDate) {
-    const minDate = new Date();
-    minDate.setHours(0,0,0,0);
-    reqDate.min = minDate.toISOString().split('T')[0];
-  }
-
-  await loadRequests();
+.form-group input:focus {
+  outline: none;
+  border-color: var(--blue);
 }
 
-// ============================================================
-//  SUPABASE — CARGAR SOLICITUDES
-// ============================================================
-async function loadRequests() {
-  if (!sb) {
-    requests = [];
-    render();
-    return;
-  }
-
-  try {
-    const { data, error } = await sb
-      .from('reservas')
-      .select('*')
-      .order('fecha', { ascending: true });
-
-    if (error) throw error;
-
-    requests = data || [];
-  } catch(e) {
-    console.error('Error cargando solicitudes:', e);
-    showToast('Error conectando con la base de datos');
-    requests = [];
-  }
-
-  render();
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 10px;
+  background: var(--blue);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
 }
 
-// ============================================================
-//  SUPABASE — GUARDAR SOLICITUD
-// ============================================================
-async function submitRequest() {
-  if (currentUser === 'lorna' || currentUser === 'dvalverde') return;
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
 
-  const dateVal = document.getElementById('req-date').value;
-  const noteVal = document.getElementById('req-note').value.trim();
-  const btn     = document.getElementById('req-btn');
-
-  if (!dateVal) {
-    showToast('Seleccioná una fecha');
-    return;
-  }
-
-  const [y, m, d] = dateVal.split('-').map(Number);
-  const dateObj   = new Date(y, m - 1, d);
-  const todayFlat = new Date();
-  todayFlat.setHours(0,0,0,0);
-
-  if (dateObj < todayFlat) {
-    showToast('No podés solicitar días pasados');
-    return;
-  }
-
-  const u = USERS[currentUser];
-
-  const exists = requests.find(r =>
-    r.fecha === dateVal &&
-    r.proyecto === u.project &&
-    r.estado !== 'rejected'
-  );
-
-  if (exists) {
-    showToast('Ya tenés una solicitud para ese día');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Guardando…';
-
-  try {
-    const { error } = await sb.from('reservas').insert([{
-      fecha: dateVal,
-      proyecto: u.project,
-      usuario: currentUser,
-      nombre: u.name,
-      nota: noteVal || null,
-      estado: 'pending'
-    }]);
-
-    if (error) throw error;
-
-    showToast('¡Solicitud enviada! ✓');
-
-    document.getElementById('req-date').value = '';
-    document.getElementById('req-note').value = '';
-
-    viewYear  = y;
-    viewMonth = m - 1;
-
-    await loadRequests();
-  } catch(e) {
-    showToast('Error al guardar: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Solicitar día';
-  }
+.btn-approve {
+  padding: 6px 14px;
+  background: var(--green-light);
+  color: var(--green);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-// ============================================================
-//  SUPABASE — ACTUALIZAR ESTADO
-// ============================================================
-async function updateStatus(id, newStatus) {
-  try {
-    const { error } = await sb
-      .from('reservas')
-      .update({ estado: newStatus })
-      .eq('id', id);
-
-    if (error) throw error;
-  } catch(e) {
-    showToast('Error al actualizar: ' + e.message);
-    throw e;
-  }
+.btn-reject {
+  padding: 6px 14px;
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-// ============================================================
-//  APROBAR TODAS
-// ============================================================
-async function approveAll() {
-  const toApprove = requests.filter(r =>
-    r.estado === 'pending' &&
-    getDayRequests(r.fecha).filter(x => x.estado !== 'rejected').length < 2
-  );
-
-  if (!toApprove.length) {
-    showToast('No hay solicitudes sin conflicto');
-    return;
-  }
-
-  for (const r of toApprove) {
-    await updateStatus(r.id, 'approved');
-  }
-
-  showToast(`${toApprove.length} solicitud(es) aprobada(s) ✓`);
-  await loadRequests();
+.btn-secondary {
+  padding: 6px 14px;
+  background: var(--white);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
 }
 
-// ============================================================
-//  HELPERS
-// ============================================================
-function getDayRequests(fecha) {
-  return requests.filter(r => r.fecha === fecha);
+.btn-logout {
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
 }
 
-function hasConflict(fecha) {
-  return getDayRequests(fecha)
-    .filter(r => r.estado !== 'rejected')
-    .length > 1;
+.btn-logout:hover { background: var(--gray-100); }
+
+.btn-sm-approve {
+  padding: 4px 10px;
+  background: var(--green-light);
+  color: var(--green);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-function dateKey(y, m, d) {
-  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+/* Error */
+.error-msg {
+  background: var(--red-light);
+  color: var(--red);
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 1rem;
+  border: 1px solid #fca5a5;
 }
 
-function getProjectLabel(project) {
-  if (project === 'ccss') return 'CCSS';
-  if (project === 'aya') return 'AyA';
-  return project;
+/* Navbar */
+.navbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 1.5rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-function render() {
-  renderCalendar();
-  renderRequests();
-  renderStats();
-  renderTodayStatus();
+.nav-left { display: flex; align-items: center; gap: 10px; }
+.nav-title { font-size: 16px; font-weight: 600; }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+
+.user-chip {
+  padding: 4px 12px;
+  background: var(--blue-light);
+  color: var(--blue);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
-// ============================================================
-//  ESTADO DE HOY
-// ============================================================
-function renderTodayStatus() {
-  const todayEl = document.getElementById('today-location');
-  if (!todayEl) return;
+.user-chip.orange { background: #fff7ed; color: #c2410c; }
+.user-chip.green { background: var(--green-light); color: var(--green); }
+.user-chip.purple { background: #ede9fe; color: #5b21b6; }
 
-  const todayKey = dateKey(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate()
-  );
-
-  const approvedToday = getDayRequests(todayKey)
-    .filter(r => r.estado === 'approved');
-
-  const activeToday = getDayRequests(todayKey)
-    .filter(r => r.estado !== 'rejected');
-
-  if (approvedToday.length === 1) {
-    const r = approvedToday[0];
-    todayEl.className = 'status-indicator status-' + r.proyecto;
-    todayEl.textContent = getProjectLabel(r.proyecto);
-    return;
-  }
-
-  if (approvedToday.length > 1 || activeToday.length > 1) {
-    todayEl.className = 'status-indicator status-none';
-    todayEl.textContent = '⚠️ Conflicto';
-    return;
-  }
-
-  if (activeToday.length === 1 && activeToday[0].estado === 'pending') {
-    const r = activeToday[0];
-    todayEl.className = 'status-indicator status-' + r.proyecto;
-    todayEl.textContent = getProjectLabel(r.proyecto) + ' pendiente';
-    return;
-  }
-
-  todayEl.className = 'status-indicator status-none';
-  todayEl.textContent = 'Sin asignación';
+/* Container */
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
 }
 
-// ============================================================
-//  CALENDARIO
-// ============================================================
-function renderCalendar() {
-  document.getElementById('cal-title').textContent =
-    MONTHS[viewMonth] + ' ' + viewYear;
-
-  const grid = document.getElementById('cal-grid');
-  grid.innerHTML = '';
-
-  DOWS.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'cal-dow';
-    el.textContent = d;
-    grid.appendChild(el);
-  });
-
-  const firstDow    = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const todayFlat   = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  for (let i = 0; i < firstDow; i++) {
-    const el = document.createElement('div');
-    el.className = 'cal-day empty';
-    grid.appendChild(el);
-  }
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const el = document.createElement('div');
-    el.className = 'cal-day';
-
-    const fecha   = dateKey(viewYear, viewMonth, d);
-    const dayDate = new Date(viewYear, viewMonth, d);
-
-    if (dayDate.getTime() === todayFlat.getTime()) {
-      el.classList.add('today');
-    }
-
-    if (dayDate < todayFlat) {
-      el.classList.add('past');
-    }
-
-    const num = document.createElement('div');
-    num.className = 'day-num';
-    num.textContent = d;
-    el.appendChild(num);
-
-    const dr = getDayRequests(fecha).filter(r => r.estado !== 'rejected');
-
-    // ========================================================
-    // NUEVO: COLOR VISUAL POR INSTITUCIÓN
-    // ========================================================
-    if (dr.length === 1) {
-      const proyecto = dr[0].proyecto;
-
-      if (proyecto === 'ccss' || proyecto === 'aya') {
-        el.classList.add(proyecto + '-day');
-      }
-
-      el.setAttribute(
-        'data-tooltip',
-        `${dr[0].nombre} · ${getProjectLabel(proyecto)} · ${dr[0].estado === 'approved' ? 'Aprobado' : 'Pendiente'}`
-      );
-    }
-
-    if (dr.length > 1) {
-      el.classList.add('conflict-day');
-      el.setAttribute('data-tooltip', '⚠️ Conflicto: varias solicitudes este día');
-    }
-
-    if (dr.length) {
-      const dots = document.createElement('div');
-      dots.className = 'dots';
-
-      if (hasConflict(fecha)) {
-        const dot = document.createElement('div');
-        dot.className = 'dot dot-conflict';
-        dots.appendChild(dot);
-      } else {
-        dr.forEach(r => {
-          const dot = document.createElement('div');
-          dot.className = 'dot dot-' + r.proyecto;
-          dots.appendChild(dot);
-        });
-      }
-
-      el.appendChild(dots);
-    }
-
-    el.addEventListener('click', () => openDayModal(fecha));
-    grid.appendChild(el);
-  }
+/* Main grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 1.25rem;
+  align-items: start;
 }
 
-// ============================================================
-//  MODAL DE DÍA
-// ============================================================
-function openDayModal(fecha) {
-  const dr = getDayRequests(fecha);
-  const [y, m, d] = fecha.split('-').map(Number);
-
-  document.getElementById('modal-title').textContent =
-    '📅 ' + d + ' de ' + MONTHS[m-1] + ' de ' + y;
-
-  let body = '';
-
-  if (hasConflict(fecha)) {
-    body += `
-      <div class="conflict-alert">
-        ⚠️ Conflicto: dos proyectos solicitan este día. Lorna debe elegir quién va.
-      </div>
-    `;
-  }
-
-  if (!dr.length) {
-    body = `
-      <div style="color:#9ca3af;font-size:13px">
-        Sin solicitudes para este día.
-      </div>
-    `;
-  } else {
-    dr.forEach(r => {
-      const estado =
-        r.estado === 'pending'
-          ? '<span class="badge badge-pending">Pendiente</span>'
-          : r.estado === 'approved'
-            ? '<span class="badge badge-approved">Aprobado</span>'
-            : '<span class="badge badge-rejected">Rechazado</span>';
-
-      body += `
-        <div class="modal-req ${r.proyecto}">
-          <div style="font-weight:600;color:#1f2937">
-            ${r.nombre} ${estado}
-          </div>
-          <div style="font-size:12px;color:#9ca3af;margin-top:2px">
-            ${getProjectLabel(r.proyecto)}
-          </div>
-          ${
-            r.nota
-              ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${r.nota}"</div>`
-              : ''
-          }
-        </div>
-      `;
-    });
-  }
-
-  document.getElementById('modal-body').innerHTML = body;
-
-  const footer = document.getElementById('modal-footer');
-  footer.innerHTML = '';
-
-  if (currentUser === 'lorna' && dr.length) {
-    if (hasConflict(fecha)) {
-      dr.filter(r => r.estado !== 'rejected').forEach(r => {
-        const btn = document.createElement('button');
-        btn.className = 'btn-approve';
-        btn.style.fontSize = '12px';
-        btn.textContent = '✅ Aprobar ' + r.nombre.split(' ')[0];
-
-        btn.onclick = async () => {
-          await updateStatus(r.id, 'approved');
-
-          for (const o of dr.filter(x => x.id !== r.id)) {
-            await updateStatus(o.id, 'rejected');
-          }
-
-          showToast('Día asignado a ' + r.nombre.split(' ')[0]);
-          await loadRequests();
-          closeModal();
-        };
-
-        footer.appendChild(btn);
-      });
-    } else {
-      const pending = dr.filter(r => r.estado === 'pending');
-
-      if (pending.length) {
-        const ab = document.createElement('button');
-        ab.className = 'btn-approve';
-        ab.textContent = '✅ Aprobar';
-
-        ab.onclick = async () => {
-          for (const r of pending) {
-            await updateStatus(r.id, 'approved');
-          }
-
-          showToast('Día aprobado ✓');
-          await loadRequests();
-          closeModal();
-        };
-
-        footer.appendChild(ab);
-
-        const rb = document.createElement('button');
-        rb.className = 'btn-reject';
-        rb.textContent = '❌ Rechazar';
-
-        rb.onclick = async () => {
-          for (const r of pending) {
-            await updateStatus(r.id, 'rejected');
-          }
-
-          showToast('Día rechazado');
-          await loadRequests();
-          closeModal();
-        };
-
-        footer.appendChild(rb);
-      }
-    }
-  }
-
-  const cb = document.createElement('button');
-  cb.className = 'btn-secondary';
-  cb.textContent = 'Cerrar';
-  cb.onclick = closeModal;
-
-  footer.appendChild(cb);
-
-  document.getElementById('modal').classList.add('open');
+@media (max-width: 720px) {
+  .main-grid { grid-template-columns: 1fr; }
 }
 
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal')) return;
-  document.getElementById('modal').classList.remove('open');
+/* Calendar */
+.cal-section {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
 }
 
-// ============================================================
-//  LISTA Y STATS
-// ============================================================
-function renderRequests() {
-  const list = document.getElementById('req-list');
-
-  const sorted = [...requests].sort((a, b) => a.fecha.localeCompare(b.fecha));
-
-  if (!sorted.length) {
-    list.innerHTML = '<div class="empty-state">Sin solicitudes aún</div>';
-    return;
-  }
-
-  list.innerHTML = sorted.map(r => {
-    const conflict  = hasConflict(r.fecha);
-    const cls       = conflict ? 'conflict' : r.proyecto;
-    const [y, m, d] = r.fecha.split('-').map(Number);
-
-    const badge =
-      r.estado === 'pending'
-        ? 'badge-pending'
-        : r.estado === 'approved'
-          ? 'badge-approved'
-          : 'badge-rejected';
-
-    const badgeTxt =
-      r.estado === 'pending'
-        ? 'Pendiente'
-        : r.estado === 'approved'
-          ? 'Aprobado'
-          : 'Rechazado';
-
-    return `
-      <div class="req-item ${cls} ${r.estado === 'rejected' ? 'rejected' : ''}">
-        <div class="req-date">
-          ${d} ${MONTHS[m-1]} ${y}
-          <span class="badge ${badge}">${badgeTxt}</span>
-        </div>
-        <div class="req-meta">
-          ${r.nombre} · ${getProjectLabel(r.proyecto)}${conflict ? ' ⚠️' : ''}
-        </div>
-        ${
-          r.nota
-            ? `<div class="req-note">"${r.nota}"</div>`
-            : ''
-        }
-      </div>
-    `;
-  }).join('');
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
 }
 
-function renderStats() {
-  const monthKey = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
-
-  const ccssCount = requests.filter(r =>
-    r.proyecto === 'ccss' &&
-    r.fecha.startsWith(monthKey) &&
-    r.estado !== 'rejected'
-  ).length;
-
-  const ayaCount = requests.filter(r =>
-    r.proyecto === 'aya' &&
-    r.fecha.startsWith(monthKey) &&
-    r.estado !== 'rejected'
-  ).length;
-
-  const pend = requests.filter(r =>
-    r.estado === 'pending'
-  ).length;
-
-  const days = new Set(
-    requests
-      .filter(r => r.fecha.startsWith(monthKey))
-      .map(r => r.fecha)
-  );
-
-  let conf = 0;
-
-  days.forEach(f => {
-    if (hasConflict(f)) conf++;
-  });
-
-  document.getElementById('stat-ccss').textContent = ccssCount;
-  document.getElementById('stat-aya').textContent  = ayaCount;
-  document.getElementById('stat-pend').textContent = pend;
-  document.getElementById('stat-conf').textContent = conf;
+.cal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
 }
 
-// ============================================================
-//  HELPERS UI
-// ============================================================
-function showToast(msg) {
-  const t = document.getElementById('toast');
-
-  t.textContent = msg;
-  t.classList.add('show');
-
-  setTimeout(() => {
-    t.classList.remove('show');
-  }, 2600);
+.nav-arrow {
+  background: none;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--gray-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
-function changeMonth(delta) {
-  viewMonth += delta;
+.nav-arrow:hover { background: var(--gray-100); }
 
-  if (viewMonth > 11) {
-    viewMonth = 0;
-    viewYear++;
-  }
-
-  if (viewMonth < 0) {
-    viewMonth = 11;
-    viewYear--;
-  }
-
-  renderCalendar();
-  renderStats();
+.calendar-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--gray-600);
+  margin-bottom: 1rem;
 }
 
-// ============================================================
-//  EVENTOS DE LOGIN
-// ============================================================
-const loginPassInput = document.getElementById('login-pass');
-const loginUserInput = document.getElementById('login-user');
-
-if (loginPassInput) {
-  loginPassInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-  });
+.calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
-if (loginUserInput) {
-  loginUserInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      document.getElementById('login-pass').focus();
-    }
-  });
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
 }
 
-// ============================================================
-//  ARRANQUE
-// ============================================================
-initSupabase();
+.legend-ccss { background: var(--blue); }
+.legend-aya { background: var(--green); }
+.legend-conflict { background: var(--red); }
 
-const savedUser = sessionStorage.getItem('backup_user');
-
-if (savedUser && USERS[savedUser]) {
-  currentUser = savedUser;
-  showApp();
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
 }
+
+.cal-dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.cal-day {
+  min-height: 65px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  padding: 5px 6px;
+  cursor: pointer;
+  transition: all .12s;
+  background: var(--white);
+  position: relative;
+  overflow: visible;
+}
+
+.cal-day:hover {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  transform: scale(1.02);
+  box-shadow: var(--shadow);
+}
+
+.cal-day.empty {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.cal-day.empty:hover {
+  background: transparent;
+  border-color: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.cal-day.today {
+  border-color: var(--blue);
+  border-width: 2px;
+}
+
+.cal-day.past {
+  opacity: .45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.day-num {
+  font-size: 12px;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.cal-day.today .day-num { color: var(--blue); }
+
+/* Visual institution days */
+.cal-day.ccss-day {
+  background: var(--blue-light);
+  border-color: var(--blue);
+}
+
+.cal-day.aya-day {
+  background: var(--green-light);
+  border-color: var(--green);
+}
+
+.cal-day.conflict-day {
+  background: var(--red-light);
+  border-color: var(--red);
+}
+
+.cal-day.ccss-day::after,
+.cal-day.aya-day::after,
+.cal-day.conflict-day::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  left: 0;
+  top: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.cal-day.ccss-day::after { background: var(--blue); }
+.cal-day.aya-day::after { background: var(--green); }
+.cal-day.conflict-day::after { background: var(--red); }
+
+/* Tooltip */
+.cal-day[data-tooltip]:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 105%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gray-800);
+  color: white;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot-ccss { background: #1a56db; }
+.dot-aya { background: #057a55; }
+.dot-conflict { background: #c81e1e; }
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Card */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 1rem;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.card-top .card-title { margin-bottom: 0; }
+
+/* Today status */
+.status-indicator {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-ccss {
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
+.status-aya {
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.status-none {
+  background: var(--gray-100);
+  color: var(--gray-400);
+}
+
+/* Stats */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-box {
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.stat-box.blue { background: var(--blue-light); }
+.stat-box.green { background: var(--green-light); }
+.stat-box.yellow { background: var(--yellow-light); }
+.stat-box.red { background: var(--red-light); }
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.stat-box.blue .stat-num { color: var(--blue); }
+.stat-box.green .stat-num { color: var(--green); }
+.stat-box.yellow .stat-num { color: var(--yellow); }
+.stat-box.red .stat-num { color: var(--red); }
+
+.stat-lbl {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-top: 2px;
+}
+
+/* Request list */
+.req-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.req-list::-webkit-scrollbar { width: 6px; }
+.req-list::-webkit-scrollbar-thumb {
+  background: var(--gray-200);
+  border-radius: 10px;
+}
+
+.req-item {
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+  font-size: 13px;
+  border-left-width: 3px;
+}
+
+.req-item.ccss {
+  border-left-color: #1a56db;
+  background: #f8faff;
+}
+
+.req-item.aya {
+  border-left-color: #057a55;
+  background: #f0fdf4;
+}
+
+.req-item.conflict {
+  border-left-color: #c81e1e;
+  background: var(--red-light);
+}
+
+.req-item.rejected { opacity: .6; }
+
+.req-date {
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 2px;
+}
+
+.req-meta {
+  color: var(--gray-400);
+  font-size: 12px;
+}
+
+.req-note {
+  color: var(--gray-600);
+  font-size: 12px;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 5px;
+}
+
+.badge-pending { background: var(--yellow-light); color: var(--yellow); }
+.badge-approved { background: var(--green-light); color: var(--green); }
+.badge-rejected { background: var(--gray-100); color: var(--gray-400); }
+.badge-conflict { background: var(--red-light); color: var(--red); }
+
+.empty-state {
+  font-size: 13px;
+  color: var(--gray-400);
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+  background: var(--white);
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-md);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-head h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--gray-400);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+#modal-body {
+  padding: 1rem 1.25rem;
+  font-size: 13px;
+  color: var(--gray-600);
+}
+
+.modal-footer {
+  padding: .75rem 1.25rem;
+  border-top: 1px solid var(--gray-200);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.conflict-alert {
+  background: var(--red-light);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--red);
+  margin-bottom: 12px;
+}
+
+.modal-req {
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  border-left: 3px solid;
+  font-size: 13px;
+}
+
+.modal-req.ccss {
+  border-left-color: #1a56db;
+  background: #f8faff;
+}
+
+.modal-req.aya {
+  border-left-color: #057a55;
+  background: #f0fdf4;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gray-800);
+  color: var(--white);
+  padding: 9px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.toast.show { opacity: 1; }
+
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+``
