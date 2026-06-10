@@ -2,34 +2,50 @@
 //  USUARIOS DEL SISTEMA
 // ============================================================
 const USERS = {
-  dvalverde: { name: 'Dennis Valverde', role: 'Backup',            project: 'backup', chipClass: 'orange' },
-  deiby:     { name: 'Deiby Campos',    role: 'Coordinador CCSS',  project: 'ccss',   chipClass: '' },
-  sebastian: { name: 'Sebastián Madriz',role: 'Coordinador AyA',   project: 'aya',    chipClass: 'green' },
-  lorna:     { name: 'Lorna Vega',      role: 'Supervisora',       project: 'super',  chipClass: 'purple' }
+  dvalverde: {
+    name: 'Dennis Valverde',
+    role: 'Backup',
+    project: 'vacaciones',
+    chipClass: 'orange'
+  },
+  deiby: {
+    name: 'Deiby Campos',
+    role: 'Coordinador CCSS',
+    project: 'ccss',
+    chipClass: ''
+  },
+  sebastian: {
+    name: 'Sebastián Madriz',
+    role: 'Coordinador AyA',
+    project: 'aya',
+    chipClass: 'green'
+  },
+  lorna: {
+    name: 'Lorna Vega',
+    role: 'Supervisora',
+    project: 'super',
+    chipClass: 'purple'
+  }
 };
 
-// Contraseñas por defecto — si el usuario tiene contraseña guardada en Supabase, esa tiene prioridad
 const DEFAULT_PASSWORDS = {
   dvalverde: 'backup2024',
-  deiby:     'ccss2024',
+  deiby: 'ccss2024',
   sebastian: 'aya2024',
-  lorna:     'super2024'
+  lorna: 'super2024'
 };
 
 const FIRST_LOGIN_USERS = new Set(['deiby', 'sebastian', 'lorna', 'dvalverde']);
 
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const DOWS   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const DOWS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-// ============================================================
-//  ESTADO
-// ============================================================
 let sb = null;
 let currentUser = null;
 let requests = [];
-let viewYear  = new Date().getFullYear();
+let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
-const today   = new Date();
+const today = new Date();
 
 // ============================================================
 //  INIT SUPABASE
@@ -37,13 +53,13 @@ const today   = new Date();
 function initSupabase() {
   try {
     sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  } catch(e) {
+  } catch (e) {
     console.error('Error iniciando Supabase:', e);
   }
 }
 
 // ============================================================
-//  CONTRASEÑAS
+//  PASSWORDS
 // ============================================================
 async function getStoredPassword(username) {
   try {
@@ -55,7 +71,7 @@ async function getStoredPassword(username) {
 
     if (error || !data) return null;
     return data;
-  } catch(e) {
+  } catch (e) {
     return null;
   }
 }
@@ -70,7 +86,7 @@ async function savePassword(username, password) {
       );
 
     if (error) throw error;
-  } catch(e) {
+  } catch (e) {
     console.error('Error guardando contraseña:', e);
   }
 }
@@ -80,9 +96,9 @@ async function savePassword(username, password) {
 // ============================================================
 async function doLogin() {
   const username = document.getElementById('login-user').value.trim().toLowerCase();
-  const pass     = document.getElementById('login-pass').value;
-  const errEl    = document.getElementById('login-error');
-  const btn      = document.getElementById('login-btn');
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
 
   if (!USERS[username]) {
     errEl.textContent = 'Usuario no encontrado.';
@@ -96,14 +112,13 @@ async function doLogin() {
   const stored = await getStoredPassword(username);
 
   let validPassword = false;
-  let isFirstLogin  = false;
+  let isFirstLogin = false;
 
   if (stored) {
     validPassword = stored.password === pass;
-    isFirstLogin  = false;
   } else {
     validPassword = DEFAULT_PASSWORDS[username] === pass;
-    isFirstLogin  = true;
+    isFirstLogin = true;
   }
 
   btn.disabled = false;
@@ -147,26 +162,26 @@ function showChangePassword(isFirst = false) {
   document.getElementById('change-pass-screen').classList.add('active');
 
   const title = document.getElementById('cp-title');
-  const sub   = document.getElementById('cp-sub');
+  const sub = document.getElementById('cp-sub');
 
   if (isFirst) {
     title.textContent = '¡Bienvenido/a, ' + USERS[currentUser].name.split(' ')[0] + '!';
-    sub.textContent   = 'Es tu primer acceso. Por favor establecé tu contraseña personal.';
+    sub.textContent = 'Es tu primer acceso. Por favor establecé tu contraseña personal.';
   } else {
     title.textContent = 'Cambiar contraseña';
-    sub.textContent   = 'Ingresá tu nueva contraseña.';
+    sub.textContent = 'Ingresá tu nueva contraseña.';
   }
 
-  document.getElementById('cp-new').value     = '';
+  document.getElementById('cp-new').value = '';
   document.getElementById('cp-confirm').value = '';
   document.getElementById('cp-error').style.display = 'none';
 }
 
 async function saveNewPassword() {
-  const newPass  = document.getElementById('cp-new').value;
-  const confirm  = document.getElementById('cp-confirm').value;
-  const errEl    = document.getElementById('cp-error');
-  const btn      = document.getElementById('cp-btn');
+  const newPass = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  const errEl = document.getElementById('cp-error');
+  const btn = document.getElementById('cp-btn');
 
   if (newPass.length < 6) {
     errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
@@ -209,32 +224,42 @@ async function showApp() {
   document.getElementById('app-screen').classList.add('active');
 
   const u = USERS[currentUser];
-  const chip = document.getElementById('nav-user');
 
+  const chip = document.getElementById('nav-user');
   chip.textContent = u.name + ' · ' + u.role;
   chip.className = 'user-chip ' + u.chipClass;
 
   const changePassBtn = document.getElementById('change-pass-btn');
-  if (changePassBtn) {
-    changePassBtn.style.display = 'inline-block';
-  }
+  if (changePassBtn) changePassBtn.style.display = 'inline-block';
 
-  const reqCard       = document.getElementById('request-card');
+  const reqCard = document.getElementById('request-card');
   const approveAllBtn = document.getElementById('approve-all-btn');
+  const reqTitle = document.getElementById('request-title');
+  const reqBtn = document.getElementById('req-btn');
+  const reqNote = document.getElementById('req-note');
 
   if (currentUser === 'lorna') {
     if (reqCard) reqCard.style.display = 'none';
     if (approveAllBtn) approveAllBtn.style.display = 'inline-block';
-  } else if (currentUser === 'dvalverde') {
-    if (reqCard) reqCard.style.display = 'none';
-    if (approveAllBtn) approveAllBtn.style.display = 'none';
   } else {
     if (reqCard) reqCard.style.display = 'block';
     if (approveAllBtn) approveAllBtn.style.display = 'none';
 
-    const btn = document.getElementById('req-btn');
-    if (btn) {
-      btn.style.background = currentUser === 'deiby' ? '#1a56db' : '#057a55';
+    if (currentUser === 'dvalverde') {
+      reqTitle.textContent = 'Agregar vacaciones';
+      reqBtn.textContent = 'Agregar vacaciones';
+      reqBtn.style.background = '#6d28d9';
+      reqNote.placeholder = 'Ej: Vacaciones, día libre, permiso';
+    } else if (currentUser === 'deiby') {
+      reqTitle.textContent = 'Solicitar día';
+      reqBtn.textContent = 'Solicitar día';
+      reqBtn.style.background = '#1a56db';
+      reqNote.placeholder = 'Ej: Reunión de revisión';
+    } else if (currentUser === 'sebastian') {
+      reqTitle.textContent = 'Solicitar día';
+      reqBtn.textContent = 'Solicitar día';
+      reqBtn.style.background = '#057a55';
+      reqNote.placeholder = 'Ej: Reunión de revisión';
     }
   }
 
@@ -249,7 +274,7 @@ async function showApp() {
 }
 
 // ============================================================
-//  SUPABASE — CARGAR SOLICITUDES
+//  SUPABASE
 // ============================================================
 async function loadRequests() {
   if (!sb) {
@@ -267,7 +292,7 @@ async function loadRequests() {
     if (error) throw error;
 
     requests = data || [];
-  } catch(e) {
+  } catch (e) {
     console.error('Error cargando solicitudes:', e);
     showToast('Error conectando con la base de datos');
     requests = [];
@@ -276,15 +301,12 @@ async function loadRequests() {
   render();
 }
 
-// ============================================================
-//  SUPABASE — GUARDAR SOLICITUD
-// ============================================================
 async function submitRequest() {
-  if (currentUser === 'lorna' || currentUser === 'dvalverde') return;
+  if (currentUser === 'lorna') return;
 
   const dateVal = document.getElementById('req-date').value;
   const noteVal = document.getElementById('req-note').value.trim();
-  const btn     = document.getElementById('req-btn');
+  const btn = document.getElementById('req-btn');
 
   if (!dateVal) {
     showToast('Seleccioná una fecha');
@@ -292,63 +314,63 @@ async function submitRequest() {
   }
 
   const [y, m, d] = dateVal.split('-').map(Number);
-  const dateObj   = new Date(y, m - 1, d);
+  const dateObj = new Date(y, m - 1, d);
   const todayFlat = new Date();
   todayFlat.setHours(0,0,0,0);
 
   if (dateObj < todayFlat) {
-    showToast('No podés solicitar días pasados');
+    showToast('No podés seleccionar días pasados');
     return;
   }
 
   const u = USERS[currentUser];
+  const project = u.project;
 
   const exists = requests.find(r =>
     r.fecha === dateVal &&
-    r.proyecto === u.project &&
+    r.proyecto === project &&
     r.estado !== 'rejected'
   );
 
   if (exists) {
-    showToast('Ya tenés una solicitud para ese día');
+    showToast('Ya existe una solicitud para ese día');
     return;
   }
 
   btn.disabled = true;
   btn.textContent = 'Guardando…';
 
+  const estadoInicial = currentUser === 'dvalverde' ? 'approved' : 'pending';
+
   try {
     const { error } = await sb.from('reservas').insert([{
       fecha: dateVal,
-      proyecto: u.project,
+      proyecto: project,
       usuario: currentUser,
       nombre: u.name,
       nota: noteVal || null,
-      estado: 'pending'
+      estado: estadoInicial
     }]);
 
     if (error) throw error;
 
-    showToast('¡Solicitud enviada! ✓');
+    showToast(currentUser === 'dvalverde' ? 'Vacaciones agregadas ✓' : '¡Solicitud enviada! ✓');
 
     document.getElementById('req-date').value = '';
     document.getElementById('req-note').value = '';
 
-    viewYear  = y;
+    viewYear = y;
     viewMonth = m - 1;
 
     await loadRequests();
-  } catch(e) {
+  } catch (e) {
     showToast('Error al guardar: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Solicitar día';
+    btn.textContent = currentUser === 'dvalverde' ? 'Agregar vacaciones' : 'Solicitar día';
   }
 }
 
-// ============================================================
-//  SUPABASE — ACTUALIZAR ESTADO
-// ============================================================
 async function updateStatus(id, newStatus) {
   try {
     const { error } = await sb
@@ -357,15 +379,12 @@ async function updateStatus(id, newStatus) {
       .eq('id', id);
 
     if (error) throw error;
-  } catch(e) {
+  } catch (e) {
     showToast('Error al actualizar: ' + e.message);
     throw e;
   }
 }
 
-// ============================================================
-//  SUPABASE — EDITAR Y ELIMINAR SOLICITUD
-// ============================================================
 async function updateRequestDetails(id, newFecha, newNota) {
   try {
     const { data, error } = await sb
@@ -387,7 +406,7 @@ async function updateRequestDetails(id, newFecha, newNota) {
     showToast('Solicitud actualizada ✓');
     await loadRequests();
     return true;
-  } catch(e) {
+  } catch (e) {
     showToast('Error al editar: ' + e.message);
     throw e;
   }
@@ -411,7 +430,7 @@ async function deleteRequest(id) {
     showToast('Solicitud eliminada ✓');
     await loadRequests();
     return true;
-  } catch(e) {
+  } catch (e) {
     showToast('Error al eliminar: ' + e.message);
     throw e;
   }
@@ -431,7 +450,6 @@ async function editRequestPrompt(id) {
   }
 
   const nuevaFecha = prompt('Nueva fecha en formato YYYY-MM-DD:', r.fecha);
-
   if (nuevaFecha === null) return;
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(nuevaFecha)) {
@@ -460,19 +478,15 @@ async function editRequestPrompt(id) {
   );
 
   if (duplicate) {
-    showToast('Ya existe una solicitud activa de ese proyecto para esa fecha');
+    showToast('Ya existe una reserva activa de ese tipo para esa fecha');
     return;
   }
 
   const nuevaNota = prompt('Motivo o nota:', r.nota || '');
-
   if (nuevaNota === null) return;
 
   const updated = await updateRequestDetails(id, nuevaFecha, nuevaNota.trim());
-
-  if (updated) {
-    closeModal();
-  }
+  if (updated) closeModal();
 }
 
 async function deleteRequestConfirm(id) {
@@ -489,19 +503,12 @@ async function deleteRequestConfirm(id) {
   }
 
   const ok = confirm('¿Seguro que querés eliminar esta solicitud?');
-
   if (!ok) return;
 
   const deleted = await deleteRequest(id);
-
-  if (deleted) {
-    closeModal();
-  }
+  if (deleted) closeModal();
 }
 
-// ============================================================
-//  APROBAR TODAS
-// ============================================================
 async function approveAll() {
   const toApprove = requests.filter(r =>
     r.estado === 'pending' &&
@@ -541,7 +548,13 @@ function dateKey(y, m, d) {
 function getProjectLabel(project) {
   if (project === 'ccss') return 'CCSS';
   if (project === 'aya') return 'AyA';
+  if (project === 'vacaciones') return 'Vacaciones';
   return project;
+}
+
+function getProjectIcon(project) {
+  if (project === 'vacaciones') return '🌴';
+  return '';
 }
 
 function cortarTexto(texto, limite = 30) {
@@ -590,22 +603,15 @@ function renderTodayStatus() {
   const todayEl = document.getElementById('today-location');
   if (!todayEl) return;
 
-  const todayKey = dateKey(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate()
-  );
+  const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const approvedToday = getDayRequests(todayKey)
-    .filter(r => r.estado === 'approved');
-
-  const activeToday = getDayRequests(todayKey)
-    .filter(r => r.estado !== 'rejected');
+  const approvedToday = getDayRequests(todayKey).filter(r => r.estado === 'approved');
+  const activeToday = getDayRequests(todayKey).filter(r => r.estado !== 'rejected');
 
   if (approvedToday.length === 1) {
     const r = approvedToday[0];
     todayEl.className = 'status-indicator status-' + r.proyecto;
-    todayEl.textContent = getProjectLabel(r.proyecto);
+    todayEl.textContent = getProjectIcon(r.proyecto) + ' ' + getProjectLabel(r.proyecto);
     return;
   }
 
@@ -630,8 +636,7 @@ function renderTodayStatus() {
 //  CALENDARIO
 // ============================================================
 function renderCalendar() {
-  document.getElementById('cal-title').textContent =
-    MONTHS[viewMonth] + ' ' + viewYear;
+  document.getElementById('cal-title').textContent = MONTHS[viewMonth] + ' ' + viewYear;
 
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
@@ -643,9 +648,9 @@ function renderCalendar() {
     grid.appendChild(el);
   });
 
-  const firstDow    = new Date(viewYear, viewMonth, 1).getDay();
+  const firstDow = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const todayFlat   = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayFlat = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   for (let i = 0; i < firstDow; i++) {
     const el = document.createElement('div');
@@ -657,16 +662,11 @@ function renderCalendar() {
     const el = document.createElement('div');
     el.className = 'cal-day';
 
-    const fecha   = dateKey(viewYear, viewMonth, d);
+    const fecha = dateKey(viewYear, viewMonth, d);
     const dayDate = new Date(viewYear, viewMonth, d);
 
-    if (dayDate.getTime() === todayFlat.getTime()) {
-      el.classList.add('today');
-    }
-
-    if (dayDate < todayFlat) {
-      el.classList.add('past');
-    }
+    if (dayDate.getTime() === todayFlat.getTime()) el.classList.add('today');
+    if (dayDate < todayFlat) el.classList.add('past');
 
     const num = document.createElement('div');
     num.className = 'day-num';
@@ -676,15 +676,12 @@ function renderCalendar() {
     const dr = getDayRequests(fecha).filter(r => r.estado !== 'rejected');
 
     if (dr.length === 1) {
-      const proyecto = dr[0].proyecto;
-
-      if (proyecto === 'ccss' || proyecto === 'aya') {
-        el.classList.add(proyecto + '-day');
-      }
+      const r = dr[0];
+      el.classList.add(r.proyecto + '-day');
 
       el.setAttribute(
         'data-tooltip',
-        `${dr[0].nombre} · ${getProjectLabel(proyecto)} · ${dr[0].estado === 'approved' ? 'Aprobado' : 'Pendiente'}`
+        `${r.nombre} · ${getProjectLabel(r.proyecto)} · ${r.estado === 'approved' ? 'Aprobado' : 'Pendiente'}`
       );
 
       const preview = document.createElement('div');
@@ -692,11 +689,11 @@ function renderCalendar() {
 
       const name = document.createElement('div');
       name.className = 'day-preview-name';
-      name.textContent = dr[0].nombre.split(' ')[0] + ' · ' + getProjectLabel(dr[0].proyecto);
+      name.textContent = `${getProjectIcon(r.proyecto)} ${r.nombre.split(' ')[0]} · ${getProjectLabel(r.proyecto)}`;
 
       const note = document.createElement('div');
       note.className = 'day-preview-note';
-      note.textContent = dr[0].nota ? cortarTexto(dr[0].nota, 22) : 'Sin motivo';
+      note.textContent = r.nota ? cortarTexto(r.nota, 28) : 'Sin motivo';
 
       preview.appendChild(name);
       preview.appendChild(note);
@@ -710,17 +707,17 @@ function renderCalendar() {
       const preview = document.createElement('div');
       preview.className = 'day-preview';
 
-      dr.slice(0, 2).forEach(r => {
+      dr.slice(0, 3).forEach(r => {
         const name = document.createElement('div');
         name.className = 'day-preview-name';
-        name.textContent = r.nombre.split(' ')[0] + ' · ' + getProjectLabel(r.proyecto);
+        name.textContent = `${getProjectIcon(r.proyecto)} ${r.nombre.split(' ')[0]} · ${getProjectLabel(r.proyecto)}`;
         preview.appendChild(name);
       });
 
-      if (dr.length > 2) {
+      if (dr.length > 3) {
         const more = document.createElement('div');
         more.className = 'day-preview-note';
-        more.textContent = '+' + (dr.length - 2) + ' más';
+        more.textContent = '+' + (dr.length - 3) + ' más';
         preview.appendChild(more);
       }
 
@@ -752,21 +749,21 @@ function renderCalendar() {
 }
 
 // ============================================================
-//  MODAL DE DÍA
+//  MODAL
 // ============================================================
 function openDayModal(fecha) {
   const dr = getDayRequests(fecha);
   const [y, m, d] = fecha.split('-').map(Number);
 
   document.getElementById('modal-title').textContent =
-    '📅 ' + d + ' de ' + MONTHS[m-1] + ' de ' + y;
+    '📅 ' + d + ' de ' + MONTHS[m - 1] + ' de ' + y;
 
   let body = '';
 
   if (hasConflict(fecha)) {
     body += `
       <div class="conflict-alert">
-        ⚠️ Conflicto: dos proyectos solicitan este día. Lorna debe elegir quién va.
+        ⚠️ Conflicto: varias solicitudes para este día.
       </div>
     `;
   }
@@ -791,34 +788,28 @@ function openDayModal(fecha) {
 
       body += `
         <div class="modal-req ${escapeHtml(r.proyecto)}">
-          <div style="font-weight:600;color:#1f2937">
-            ${escapeHtml(r.nombre)} ${estado}
+          <div style="font-weight:700;color:#1f2937">
+            ${escapeHtml(getProjectIcon(r.proyecto))} ${escapeHtml(r.nombre)} ${estado}
           </div>
 
-          <div style="font-size:12px;color:#9ca3af;margin-top:2px">
+          <div style="font-size:12px;color:#9ca3af;margin-top:3px">
             ${escapeHtml(getProjectLabel(r.proyecto))}
           </div>
 
           ${
             r.nota
-              ? `<div style="font-size:12px;color:#4b5563;margin-top:4px;font-style:italic">"${escapeHtml(r.nota)}"</div>`
-              : `<div style="font-size:12px;color:#9ca3af;margin-top:4px;font-style:italic">Sin motivo indicado</div>`
+              ? `<div style="font-size:12px;color:#4b5563;margin-top:5px;font-style:italic">"${escapeHtml(r.nota)}"</div>`
+              : `<div style="font-size:12px;color:#9ca3af;margin-top:5px;font-style:italic">Sin motivo indicado</div>`
           }
 
           ${
             puedeGestionar
               ? `
                 <div class="modal-actions-row">
-                  <button type="button" class="btn-edit" onclick="editRequestPrompt('${safeId}')">
-                    ✏️ Editar
-                  </button>
-                  <button type="button" class="btn-delete" onclick="deleteRequestConfirm('${safeId}')">
-                    🗑️ Eliminar
-                  </button>
+                  <button type="button" class="btn-edit" onclick="editRequestPrompt('${safeId}')">✏️ Editar</button>
+                  <button type="button" class="btn-delete" onclick="deleteRequestConfirm('${safeId}')">🗑️ Eliminar</button>
                 </div>
-                <div class="edit-help-text">
-                  Podés editar fecha o motivo si hubo un error.
-                </div>
+                <div class="edit-help-text">Podés editar fecha o motivo si hubo un error.</div>
               `
               : ''
           }
@@ -838,7 +829,6 @@ function openDayModal(fecha) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'btn-approve';
-        btn.style.fontSize = '12px';
         btn.textContent = '✅ Aprobar ' + r.nombre.split(' ')[0];
 
         btn.onclick = async () => {
@@ -909,11 +899,8 @@ function openDayModal(fecha) {
 
 function closeModal(e) {
   const modal = document.getElementById('modal');
-
   if (!modal) return;
-
   if (e && e.target !== modal) return;
-
   modal.classList.remove('open');
 }
 
@@ -922,7 +909,6 @@ function closeModal(e) {
 // ============================================================
 function renderRequests() {
   const list = document.getElementById('req-list');
-
   const sorted = [...requests].sort((a, b) => a.fecha.localeCompare(b.fecha));
 
   if (!sorted.length) {
@@ -931,8 +917,8 @@ function renderRequests() {
   }
 
   list.innerHTML = sorted.map(r => {
-    const conflict  = hasConflict(r.fecha);
-    const cls       = conflict ? 'conflict' : r.proyecto;
+    const conflict = hasConflict(r.fecha);
+    const cls = conflict ? 'conflict' : r.proyecto;
     const [y, m, d] = r.fecha.split('-').map(Number);
 
     const badge =
@@ -952,11 +938,11 @@ function renderRequests() {
     return `
       <div class="req-item ${escapeHtml(cls)} ${r.estado === 'rejected' ? 'rejected' : ''}">
         <div class="req-date">
-          ${d} ${MONTHS[m-1]} ${y}
+          ${d} ${MONTHS[m - 1]} ${y}
           <span class="badge ${badge}">${badgeTxt}</span>
         </div>
         <div class="req-meta">
-          ${escapeHtml(r.nombre)} · ${escapeHtml(getProjectLabel(r.proyecto))}${conflict ? ' ⚠️' : ''}
+          ${escapeHtml(getProjectIcon(r.proyecto))} ${escapeHtml(r.nombre)} · ${escapeHtml(getProjectLabel(r.proyecto))}${conflict ? ' ⚠️' : ''}
         </div>
         ${
           r.nota
@@ -969,7 +955,7 @@ function renderRequests() {
 }
 
 function renderStats() {
-  const monthKey = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
+  const monthKey = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}`;
 
   const ccssCount = requests.filter(r =>
     r.proyecto === 'ccss' &&
@@ -979,6 +965,12 @@ function renderStats() {
 
   const ayaCount = requests.filter(r =>
     r.proyecto === 'aya' &&
+    r.fecha.startsWith(monthKey) &&
+    r.estado !== 'rejected'
+  ).length;
+
+  const vacCount = requests.filter(r =>
+    r.proyecto === 'vacaciones' &&
     r.fecha.startsWith(monthKey) &&
     r.estado !== 'rejected'
   ).length;
@@ -1000,17 +992,17 @@ function renderStats() {
   });
 
   document.getElementById('stat-ccss').textContent = ccssCount;
-  document.getElementById('stat-aya').textContent  = ayaCount;
+  document.getElementById('stat-aya').textContent = ayaCount;
+  document.getElementById('stat-vac').textContent = vacCount;
   document.getElementById('stat-pend').textContent = pend;
   document.getElementById('stat-conf').textContent = conf;
 }
 
 // ============================================================
-//  HELPERS UI
+//  UI
 // ============================================================
 function showToast(msg) {
   const t = document.getElementById('toast');
-
   t.textContent = msg;
   t.classList.add('show');
 
@@ -1038,9 +1030,33 @@ function changeMonth(delta) {
 }
 
 // ============================================================
-//  EVENTOS DE LOGIN
+//  EVENTOS
 // ============================================================
 const loginPassInput = document.getElementById('login-pass');
 const loginUserInput = document.getElementById('login-user');
 
-if (loginPassInput)
+if (loginPassInput) {
+  loginPassInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+}
+
+if (loginUserInput) {
+  loginUserInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      document.getElementById('login-pass').focus();
+    }
+  });
+}
+
+// ============================================================
+//  ARRANQUE
+// ============================================================
+initSupabase();
+
+const savedUser = sessionStorage.getItem('backup_user');
+
+if (savedUser && USERS[savedUser]) {
+  currentUser = savedUser;
+  showApp();
+}
