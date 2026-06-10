@@ -6,25 +6,29 @@ const USERS = {
     name: 'Dennis Valverde',
     role: 'Backup',
     project: 'vacaciones',
-    chipClass: 'orange'
+    chipClass: 'orange',
+    canDirectAdd: true
   },
   deiby: {
     name: 'Deiby Campos',
     role: 'Coordinador CCSS',
     project: 'ccss',
-    chipClass: ''
+    chipClass: '',
+    canDirectAdd: false
   },
   sebastian: {
     name: 'Sebastián Madriz',
     role: 'Coordinador AyA',
     project: 'aya',
-    chipClass: 'green'
+    chipClass: 'green',
+    canDirectAdd: false
   },
   lorna: {
     name: 'Lorna Vega',
     role: 'Supervisora',
     project: 'super',
-    chipClass: 'purple'
+    chipClass: 'purple',
+    canDirectAdd: true
   }
 };
 
@@ -46,6 +50,42 @@ let requests = [];
 let viewYear = new Date().getFullYear();
 let viewMonth = new Date().getMonth();
 const today = new Date();
+
+// ============================================================
+//  TEMA
+// ============================================================
+function initTheme() {
+  const savedTheme = localStorage.getItem('backup_theme');
+
+  if (savedTheme === 'dark' || savedTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } else {
+    const prefersDark = window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  }
+
+  updateThemeButton();
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('backup_theme', next);
+
+  updateThemeButton();
+}
+
+function updateThemeButton() {
+  const btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+
+  const theme = document.documentElement.getAttribute('data-theme') || 'light';
+  btn.textContent = theme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+}
 
 // ============================================================
 //  INIT SUPABASE
@@ -237,29 +277,40 @@ async function showApp() {
   const reqTitle = document.getElementById('request-title');
   const reqBtn = document.getElementById('req-btn');
   const reqNote = document.getElementById('req-note');
+  const projectGroup = document.getElementById('project-group');
+  const projectSelect = document.getElementById('req-project');
+
+  if (reqCard) reqCard.style.display = 'block';
 
   if (currentUser === 'lorna') {
-    if (reqCard) reqCard.style.display = 'none';
     if (approveAllBtn) approveAllBtn.style.display = 'inline-block';
   } else {
-    if (reqCard) reqCard.style.display = 'block';
     if (approveAllBtn) approveAllBtn.style.display = 'none';
+  }
+
+  if (u.canDirectAdd) {
+    projectGroup.style.display = 'block';
+    reqTitle.textContent = currentUser === 'lorna' ? 'Agregar día directo' : 'Agregar asignación';
+    reqBtn.textContent = 'Agregar día';
+    reqBtn.style.background = '#6d28d9';
+    reqNote.placeholder = 'Ej: me asignaron AyA, vacaciones, soporte o permiso';
 
     if (currentUser === 'dvalverde') {
-      reqTitle.textContent = 'Agregar vacaciones';
-      reqBtn.textContent = 'Agregar vacaciones';
-      reqBtn.style.background = '#6d28d9';
-      reqNote.placeholder = 'Ej: Vacaciones, día libre, permiso';
-    } else if (currentUser === 'deiby') {
-      reqTitle.textContent = 'Solicitar día';
-      reqBtn.textContent = 'Solicitar día';
+      projectSelect.value = 'vacaciones';
+    } else {
+      projectSelect.value = 'ccss';
+    }
+  } else {
+    projectGroup.style.display = 'none';
+    reqTitle.textContent = 'Solicitar día';
+    reqBtn.textContent = 'Solicitar día';
+
+    if (currentUser === 'deiby') {
       reqBtn.style.background = '#1a56db';
-      reqNote.placeholder = 'Ej: Reunión de revisión';
+      reqNote.placeholder = 'Ej: Solicitud CCSS';
     } else if (currentUser === 'sebastian') {
-      reqTitle.textContent = 'Solicitar día';
-      reqBtn.textContent = 'Solicitar día';
       reqBtn.style.background = '#057a55';
-      reqNote.placeholder = 'Ej: Reunión de revisión';
+      reqNote.placeholder = 'Ej: Solicitud AyA';
     }
   }
 
@@ -270,6 +321,7 @@ async function showApp() {
     reqDate.min = minDate.toISOString().split('T')[0];
   }
 
+  updateThemeButton();
   await loadRequests();
 }
 
@@ -302,8 +354,6 @@ async function loadRequests() {
 }
 
 async function submitRequest() {
-  if (currentUser === 'lorna') return;
-
   const dateVal = document.getElementById('req-date').value;
   const noteVal = document.getElementById('req-note').value.trim();
   const btn = document.getElementById('req-btn');
@@ -324,7 +374,14 @@ async function submitRequest() {
   }
 
   const u = USERS[currentUser];
-  const project = u.project;
+
+  let project = u.project;
+  let estadoInicial = 'pending';
+
+  if (u.canDirectAdd) {
+    project = document.getElementById('req-project').value;
+    estadoInicial = 'approved';
+  }
 
   const exists = requests.find(r =>
     r.fecha === dateVal &&
@@ -333,14 +390,12 @@ async function submitRequest() {
   );
 
   if (exists) {
-    showToast('Ya existe una solicitud para ese día');
+    showToast('Ya existe una reserva activa de ese tipo para ese día');
     return;
   }
 
   btn.disabled = true;
   btn.textContent = 'Guardando…';
-
-  const estadoInicial = currentUser === 'dvalverde' ? 'approved' : 'pending';
 
   try {
     const { error } = await sb.from('reservas').insert([{
@@ -354,7 +409,7 @@ async function submitRequest() {
 
     if (error) throw error;
 
-    showToast(currentUser === 'dvalverde' ? 'Vacaciones agregadas ✓' : '¡Solicitud enviada! ✓');
+    showToast(u.canDirectAdd ? 'Día agregado ✓' : '¡Solicitud enviada! ✓');
 
     document.getElementById('req-date').value = '';
     document.getElementById('req-note').value = '';
@@ -367,7 +422,7 @@ async function submitRequest() {
     showToast('Error al guardar: ' + e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = currentUser === 'dvalverde' ? 'Agregar vacaciones' : 'Solicitar día';
+    btn.textContent = u.canDirectAdd ? 'Agregar día' : 'Solicitar día';
   }
 }
 
@@ -554,6 +609,8 @@ function getProjectLabel(project) {
 
 function getProjectIcon(project) {
   if (project === 'vacaciones') return '🌴';
+  if (project === 'ccss') return '🔵';
+  if (project === 'aya') return '🟢';
   return '';
 }
 
@@ -788,7 +845,7 @@ function openDayModal(fecha) {
 
       body += `
         <div class="modal-req ${escapeHtml(r.proyecto)}">
-          <div style="font-weight:700;color:#1f2937">
+          <div style="font-weight:700;color:var(--text)">
             ${escapeHtml(getProjectIcon(r.proyecto))} ${escapeHtml(r.nombre)} ${estado}
           </div>
 
@@ -798,7 +855,7 @@ function openDayModal(fecha) {
 
           ${
             r.nota
-              ? `<div style="font-size:12px;color:#4b5563;margin-top:5px;font-style:italic">"${escapeHtml(r.nota)}"</div>`
+              ? `<div style="font-size:12px;color:var(--muted);margin-top:5px;font-style:italic">"${escapeHtml(r.nota)}"</div>`
               : `<div style="font-size:12px;color:#9ca3af;margin-top:5px;font-style:italic">Sin motivo indicado</div>`
           }
 
@@ -1052,6 +1109,7 @@ if (loginUserInput) {
 // ============================================================
 //  ARRANQUE
 // ============================================================
+initTheme();
 initSupabase();
 
 const savedUser = sessionStorage.getItem('backup_user');
