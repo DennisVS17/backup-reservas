@@ -4,173 +4,233 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reservas Backup</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+
 </head>
+
 <body>
-  <div id="app">
-    <!-- Login Screen -->
-    <div id="login-screen" class="screen active">
-      <div class="login-wrap">
-        <div class="login-logo">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
-          </svg>
-          <span>Reservas Backup</span>
-        </div>
-        <h1>Iniciar sesión</h1>
-        <p class="login-sub">Ingresá con tus credenciales asignadas</p>
-        <div id="login-error" class="error-msg" style="display:none"></div>
-        <div class="form-group">
-          <label>Usuario</label>
-          <input type="text" id="login-user" placeholder="usuario" autocomplete="username" />
-        </div>
-        <div class="form-group">
-          <label>Contraseña</label>
-          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
-        <div class="login-hint">
-          <strong>Usuarios:</strong><br>
-          dvalverde / backup2024 &nbsp;·&nbsp; deiby / ccss2024<br>
-          sebastian / aya2024 &nbsp;·&nbsp; lorna / super2024<br>
-          <span style="color:#9ca3af;font-size:11px">Al ingresar por primera vez se te pedirá establecer tu contraseña personal.</span>
-        </div>
+
+<div id="app">
+
+  <!-- LOGIN -->
+  <section id="login-screen" class="screen active">
+    <div class="login-wrap">
+
+      <div class="login-logo">
+        <span>Reservas Backup</span>
       </div>
+
+      <h1>Iniciar sesión</h1>
+      <p class="login-sub">Ingresá con tus credenciales</p>
+
+      <div id="login-error" class="error-msg" style="display:none"></div>
+
+      <div class="form-group">
+        <label for="login-user">Usuario</label>
+        <input type="text" id="login-user" placeholder="usuario" required />
+      </div>
+
+      <div class="form-group">
+        <label for="login-pass">Contraseña</label>
+        <input type="password" id="login-pass" placeholder="••••••••" required />
+      </div>
+
+      <button type="button" class="btn-primary" onclick="doLogin()">Entrar</button>
+
+    </div>
+  </section>
+
+  <!-- CHANGE PASSWORD -->
+  <section id="change-pass-screen" class="screen">
+
+    <div class="login-wrap">
+
+      <h1>Establecer contraseña</h1>
+      <p class="login-sub">Elegí tu contraseña personal</p>
+
+      <div id="cp-error" class="error-msg" style="display:none"></div>
+
+      <div class="form-group">
+        <label for="cp-new">Nueva contraseña</label>
+        <input type="password" id="cp-new" required />
+      </div>
+
+      <div class="form-group">
+        <label for="cp-confirm">Confirmar contraseña</label>
+        <input type="password" id="cp-confirm" required />
+      </div>
+
+      <button type="button" class="btn-primary" onclick="saveNewPassword()">Guardar</button>
+
     </div>
 
-    <!-- Change Password Screen -->
-    <div id="change-pass-screen" class="screen">
-      <div class="login-wrap">
-        <div class="login-logo">
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
-          </svg>
-          <span>Reservas Backup</span>
-        </div>
-        <h1 id="cp-title">Establecer contraseña</h1>
-        <p class="login-sub" id="cp-sub">Elegí tu contraseña personal.</p>
-        <div id="cp-error" class="error-msg" style="display:none"></div>
-        <div class="form-group">
-          <label>Nueva contraseña</label>
-          <input type="password" id="cp-new" placeholder="Mínimo 6 caracteres" />
-        </div>
-        <div class="form-group">
-          <label>Confirmá la contraseña</label>
-          <input type="password" id="cp-confirm" placeholder="Repetí la contraseña" />
-        </div>
-        <button class="btn-primary" id="cp-btn" onclick="saveNewPassword()">Guardar y entrar</button>
+  </section>
+
+  <!-- APP -->
+  <section id="app-screen" class="screen">
+
+    <!-- NAV -->
+    <header class="navbar">
+
+      <div class="nav-left">
+        <span class="nav-title">Reservas Backup</span>
       </div>
-    </div>
 
-    <!-- Main App -->
-    <div id="app-screen" class="screen">
-      <nav class="navbar">
-        <div class="nav-left">
-          <svg width="24" height="24" viewBox="0 0 36 36" fill="none">
-            <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
-          </svg>
-          <span class="nav-title">Reservas Backup</span>
-        </div>
-        <div class="nav-right">
-          <div class="user-chip" id="nav-user"></div>
-          <button class="btn-logout" id="change-pass-btn" style="display:none" onclick="showChangePassword(false)">🔑 Cambiar clave</button>
-          <button class="btn-logout" onclick="doLogout()">Salir</button>
-        </div>
-      </nav>
+      <div class="nav-right">
+        <div id="nav-user" class="user-chip"></div>
 
-      <div class="container">
-        <div class="main-grid">
-          <!-- Calendar -->
-          <div class="cal-section">
-            <div class="cal-header">
-              <button class="nav-arrow" onclick="changeMonth(-1)">&#8249;</button>
-              <h2 id="cal-title"></h2>
-              <button class="nav-arrow" onclick="changeMonth(1)">&#8250;</button>
-            </div>
-            <div class="cal-grid" id="cal-grid"></div>
+        <button type="button" class="btn-logout" onclick="showChangePassword(false)">
+          🔑 Cambiar clave
+        </button>
+
+        <button type="button" class="btn-logout" onclick="doLogout()">
+          Salir
+        </button>
+      </div>
+
+    </header>
+
+    <!-- MAIN -->
+    <main class="container">
+
+      <div class="main-grid">
+
+        <!-- CALENDARIO -->
+        <section class="cal-section">
+
+          <div class="cal-header">
+            <button type="button" onclick="changeMonth(-1)">‹</button>
+            <h2 id="cal-title"></h2>
+            <button type="button" onclick="changeMonth(1)">›</button>
           </div>
 
-          <!-- Sidebar -->
-          <div class="sidebar">
-            <!-- Request form (coordinators only) -->
-            <div class="card" id="request-card">
-              <h3 class="card-title">Solicitar día</h3>
-              <div id="request-form">
-                <div class="form-group">
-                  <label>Fecha</label>
-                  <input type="date" id="req-date" />
-                </div>
-                <div class="form-group">
-                  <label>Nota <span style="color:#9ca3af">(opcional)</span></label>
-                  <input type="text" id="req-note" placeholder="Ej: Reunión de revisión" />
-                </div>
-                <button class="btn-primary" id="req-btn" onclick="submitRequest()">Solicitar día</button>
-              </div>
-            </div>
+          <div id="cal-grid" class="cal-grid"></div>
 
-            <!-- Stats -->
-            <div class="card">
-              <h3 class="card-title">Este mes</h3>
-              <div class="stats-row">
-                <div class="stat-box blue">
-                  <div class="stat-num" id="stat-ccss">0</div>
-                  <div class="stat-lbl">CCSS</div>
-                </div>
-                <div class="stat-box green">
-                  <div class="stat-num" id="stat-aya">0</div>
-                  <div class="stat-lbl">AyA</div>
-                </div>
-                <div class="stat-box yellow">
-                  <div class="stat-num" id="stat-pend">0</div>
-                  <div class="stat-lbl">Pendientes</div>
-                </div>
-                <div class="stat-box red">
-                  <div class="stat-num" id="stat-conf">0</div>
-                  <div class="stat-lbl">Conflictos</div>
-                </div>
-              </div>
-            </div>
+        </section>
 
-            <!-- Requests list -->
-            <div class="card" style="flex:1">
-              <div class="card-top">
-                <h3 class="card-title">Solicitudes</h3>
-                <button class="btn-sm-approve" id="approve-all-btn" style="display:none" onclick="approveAll()">Aprobar sin conflictos</button>
-              </div>
-              <div class="req-list" id="req-list">
-                <div class="empty-state">Sin solicitudes aún</div>
-              </div>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+          <!-- HOY -->
+          <div class="card">
+            <h3 class="card-title">Hoy estás en</h3>
+            <div id="today-location" class="status-indicator">
+              Sin asignación
             </div>
           </div>
-        </div>
+
+          <!-- FILTRO -->
+          <div class="card">
+            <h3 class="card-title">Ver por usuario</h3>
+            <select id="user-filter">
+              <option value="all">Todos</option>
+            </select>
+          </div>
+
+          <!-- SOLICITAR -->
+          <div class="card" id="request-card">
+
+            <h3 class="card-title">Solicitar día</h3>
+
+            <div class="form-group">
+              <label for="req-date">Fecha</label>
+              <input type="date" id="req-date" required />
+            </div>
+
+            <div class="form-group">
+              <label for="req-note">Nota</label>
+              <input type="text" id="req-note" />
+            </div>
+
+            <button type="button" class="btn-primary" onclick="submitRequest()">
+              Solicitar
+            </button>
+
+          </div>
+
+          <!-- ESTADÍSTICAS -->
+          <div class="card">
+
+            <h3 class="card-title">Este mes</h3>
+
+            <div class="stats-row">
+
+              <div class="stat-box blue">
+                <div id="stat-ccss" class="stat-num">0</div>
+                <div>CCSS</div>
+              </div>
+
+              <div class="stat-box green">
+                <div id="stat-aya" class="stat-num">0</div>
+                <div>AyA</div>
+              </div>
+
+              <div class="stat-box yellow">
+                <div id="stat-pend" class="stat-num">0</div>
+                <div>Pendientes</div>
+              </div>
+
+              <div class="stat-box red">
+                <div id="stat-conf" class="stat-num">0</div>
+                <div>Conflictos</div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- LISTA -->
+          <div class="card">
+
+            <h3 class="card-title">Solicitudes</h3>
+
+            <button type="button" onclick="approveAll()">
+              Aprobar sin conflictos
+            </button>
+
+            <div id="req-list" class="req-list">
+              <div class="empty-state">Sin solicitudes</div>
+            </div>
+
+          </div>
+
+        </aside>
+
       </div>
+
+    </main>
+
+  </section>
+
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal-overlay" onclick="closeModal(event)" role="dialog">
+
+  <div class="modal-box">
+
+    <div class="modal-head">
+      <h3 id="modal-title"></h3>
+      <button type="button" onclick="closeModal()">✕</button>
     </div>
+
+    <div id="modal-body"></div>
+    <div id="modal-footer"></div>
+
   </div>
 
-  <!-- Day Modal -->
-  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
-    <div class="modal-box">
-      <div class="modal-head">
-        <h3 id="modal-title"></h3>
-        <button class="modal-close" onclick="closeModal()">&#10005;</button>
-      </div>
-      <div id="modal-body"></div>
-      <div class="modal-footer" id="modal-footer"></div>
-    </div>
-  </div>
+</div>
 
-  <div class="toast" id="toast"></div>
+<!-- TOAST -->
+<div id="toast" class="toast" role="alert"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+
 </body>
 </html>
