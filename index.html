@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   />
 
-  <link rel="stylesheet" href="./style.css?v=10" />
+  <link rel="stylesheet" href="./style.css?v=12" />
 </head>
 
 <body>
@@ -102,7 +102,27 @@
 
         <div class="nav-right">
           <div class="user-chip" id="nav-user"></div>
-          <button type="button" class="btn-logout" id="change-pass-btn" style="display:none" onclick="showChangePassword(false)">🔑 Cambiar clave</button>
+
+          <button
+            type="button"
+            class="btn-logout"
+            id="theme-toggle"
+            onclick="toggleTheme()"
+            aria-label="Cambiar tema"
+          >
+            🌙 Tema
+          </button>
+
+          <button
+            type="button"
+            class="btn-logout"
+            id="change-pass-btn"
+            style="display:none"
+            onclick="showChangePassword(false)"
+          >
+            🔑 Cambiar clave
+          </button>
+
           <button type="button" class="btn-logout" onclick="doLogout()">Salir</button>
         </div>
       </nav>
@@ -140,6 +160,15 @@
               <h3 class="card-title" id="request-title">Solicitar día</h3>
 
               <div id="request-form">
+                <div class="form-group" id="project-group" style="display:none">
+                  <label for="req-project">Tipo de día</label>
+                  <select id="req-project">
+                    <option value="ccss">CCSS</option>
+                    <option value="aya">AyA</option>
+                    <option value="vacaciones">Vacaciones</option>
+                  </select>
+                </div>
+
                 <div class="form-group">
                   <label for="req-date">Fecha</label>
                   <input type="date" id="req-date" />
@@ -147,7 +176,7 @@
 
                 <div class="form-group">
                   <label for="req-note">Nota <span>(opcional)</span></label>
-                  <input type="text" id="req-note" placeholder="Ej: Reunión, soporte o vacaciones" />
+                  <input type="text" id="req-note" placeholder="Ej: Reunión, soporte, vacaciones o permiso" />
                 </div>
 
                 <button type="button" class="btn-primary" id="req-btn" onclick="submitRequest()">Solicitar día</button>
@@ -218,8 +247,7 @@
   <div class="toast" id="toast" role="alert"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./config.js?v=10"></script>
-  <script src="./app.js?v=10"></script>
+  <script src="./config.js?v=12"></script>
+  <script src="./app.js?v=12"></script>
 </body>
 </html>
-``
