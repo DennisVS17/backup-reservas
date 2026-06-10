@@ -404,5 +404,72 @@ body {
 }
 .toast.show { opacity: 1; }
 
+/* ===== COLORES CALENDARIO ===== */
+.cal-day { position: relative; }
+
+.cal-day.ccss-day {
+  background: #ebf0fd;
+  border-color: #1a56db;
+}
+
+.cal-day.aya-day {
+  background: #def7ec;
+  border-color: #057a55;
+}
+
+/* Barra lateral */
+.cal-day.ccss-day::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0;
+  width: 4px; height: 100%;
+  background: #1a56db;
+}
+
+.cal-day.aya-day::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0;
+  width: 4px; height: 100%;
+  background: #057a55;
+}
+
+/* ===== TOOLTIP ===== */
+.cal-day[data-tooltip]:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 5px;
+}
+
+/* ===== HOY ===== */
+.status-indicator {
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.status-ccss {
+  background: #ebf0fd;
+  color: #1a56db;
+}
+
+.status-aya {
+  background: #def7ec;
+  color: #057a55;
+}
+
+.status-none {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
 /* Loading */
 .loading { text-align: center; padding: 2rem; color: var(--gray-400); font-size: 13px; }
