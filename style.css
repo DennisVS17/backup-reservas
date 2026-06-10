@@ -721,4 +721,93 @@ body {
   color: var(--gray-400);
   font-size: 13px;
 }
+/* Loading */
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--gray-400);
+  font-size: 13px;
+}
+
+/* ===== INFORMACIÓN DENTRO DEL DÍA DEL CALENDARIO ===== */
+
+.day-preview {
+  margin-top: 5px;
+  font-size: 10.5px;
+  line-height: 1.25;
+  color: var(--gray-600);
+  overflow: hidden;
+}
+
+.day-preview-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-preview-note {
+  margin-top: 2px;
+  color: var(--gray-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-day.ccss-day .day-preview-name {
+  color: var(--blue);
+}
+
+.cal-day.aya-day .day-preview-name {
+  color: var(--green);
+}
+
+.cal-day.conflict-day .day-preview-name {
+  color: var(--red);
+}
+
+.modal-actions-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-edit {
+  padding: 5px 10px;
+  background: var(--blue-light);
+  color: var(--blue);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-delete {
+  padding: 5px 10px;
+  background: var(--red-light);
+  color: var(--red);
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-edit:hover {
+  background: #dbeafe;
+}
+
+.btn-delete:hover {
+  background: #fee2e2;
+}
+
+.edit-help-text {
+  font-size: 11px;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
 ``
