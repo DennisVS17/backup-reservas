@@ -6,16 +6,14 @@
 
   <title>Reservas Backup</title>
 
-  <!-- Fuente -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
 
-  <!-- Estilos -->
-  <link rel="stylesheet" href="./style.css?v=8" />
+  <link rel="stylesheet" href="./style.css?v=10" />
 </head>
 
 <body>
@@ -27,16 +25,9 @@
         <div class="login-logo">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
             <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path
-              d="M10 26V14l8-5 8 5v12"
-              stroke="#fff"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
           </svg>
-
           <span>Reservas Backup</span>
         </div>
 
@@ -47,42 +38,21 @@
 
         <div class="form-group">
           <label for="login-user">Usuario</label>
-          <input
-            type="text"
-            id="login-user"
-            placeholder="usuario"
-            autocomplete="username"
-            required
-          />
+          <input type="text" id="login-user" placeholder="usuario" autocomplete="username" required />
         </div>
 
         <div class="form-group">
           <label for="login-pass">Contraseña</label>
-          <input
-            type="password"
-            id="login-pass"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
+          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" required />
         </div>
 
-        <button
-          type="button"
-          class="btn-primary"
-          id="login-btn"
-          onclick="doLogin()"
-        >
-          Entrar
-        </button>
+        <button type="button" class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
 
         <div class="login-hint">
           <strong>Usuarios:</strong><br>
           dvalverde / backup2024 &nbsp;·&nbsp; deiby / ccss2024<br>
           sebastian / aya2024 &nbsp;·&nbsp; lorna / super2024<br>
-          <span style="color:#9ca3af;font-size:11px">
-            Al ingresar por primera vez se te pedirá establecer tu contraseña personal.
-          </span>
+          <span>Al ingresar por primera vez se te pedirá establecer tu contraseña personal.</span>
         </div>
       </div>
     </div>
@@ -93,16 +63,9 @@
         <div class="login-logo">
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
             <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path
-              d="M10 26V14l8-5 8 5v12"
-              stroke="#fff"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
           </svg>
-
           <span>Reservas Backup</span>
         </div>
 
@@ -113,32 +76,15 @@
 
         <div class="form-group">
           <label for="cp-new">Nueva contraseña</label>
-          <input
-            type="password"
-            id="cp-new"
-            placeholder="Mínimo 6 caracteres"
-            autocomplete="new-password"
-          />
+          <input type="password" id="cp-new" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
         </div>
 
         <div class="form-group">
           <label for="cp-confirm">Confirmá la contraseña</label>
-          <input
-            type="password"
-            id="cp-confirm"
-            placeholder="Repetí la contraseña"
-            autocomplete="new-password"
-          />
+          <input type="password" id="cp-confirm" placeholder="Repetí la contraseña" autocomplete="new-password" />
         </div>
 
-        <button
-          type="button"
-          class="btn-primary"
-          id="cp-btn"
-          onclick="saveNewPassword()"
-        >
-          Guardar y entrar
-        </button>
+        <button type="button" class="btn-primary" id="cp-btn" onclick="saveNewPassword()">Guardar y entrar</button>
       </div>
     </div>
 
@@ -148,39 +94,16 @@
         <div class="nav-left">
           <svg width="24" height="24" viewBox="0 0 36 36" fill="none" aria-hidden="true">
             <rect width="36" height="36" rx="10" fill="#1a56db"/>
-            <path
-              d="M10 26V14l8-5 8 5v12"
-              stroke="#fff"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M10 26V14l8-5 8 5v12" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <rect x="14" y="20" width="8" height="6" rx="1" fill="#fff"/>
           </svg>
-
           <span class="nav-title">Reservas Backup</span>
         </div>
 
         <div class="nav-right">
           <div class="user-chip" id="nav-user"></div>
-
-          <button
-            type="button"
-            class="btn-logout"
-            id="change-pass-btn"
-            style="display:none"
-            onclick="showChangePassword(false)"
-          >
-            🔑 Cambiar clave
-          </button>
-
-          <button
-            type="button"
-            class="btn-logout"
-            onclick="doLogout()"
-          >
-            Salir
-          </button>
+          <button type="button" class="btn-logout" id="change-pass-btn" style="display:none" onclick="showChangePassword(false)">🔑 Cambiar clave</button>
+          <button type="button" class="btn-logout" onclick="doLogout()">Salir</button>
         </div>
       </nav>
 
@@ -190,42 +113,16 @@
           <!-- Calendar -->
           <div class="cal-section">
             <div class="cal-header">
-              <button
-                type="button"
-                class="nav-arrow"
-                onclick="changeMonth(-1)"
-                aria-label="Mes anterior"
-              >
-                &#8249;
-              </button>
-
+              <button type="button" class="nav-arrow" onclick="changeMonth(-1)" aria-label="Mes anterior">&#8249;</button>
               <h2 id="cal-title"></h2>
-
-              <button
-                type="button"
-                class="nav-arrow"
-                onclick="changeMonth(1)"
-                aria-label="Mes siguiente"
-              >
-                &#8250;
-              </button>
+              <button type="button" class="nav-arrow" onclick="changeMonth(1)" aria-label="Mes siguiente">&#8250;</button>
             </div>
 
-            <div class="calendar-legend" aria-label="Leyenda del calendario">
-              <span>
-                <i class="legend-dot legend-ccss"></i>
-                CCSS
-              </span>
-
-              <span>
-                <i class="legend-dot legend-aya"></i>
-                AyA
-              </span>
-
-              <span>
-                <i class="legend-dot legend-conflict"></i>
-                Conflicto
-              </span>
+            <div class="calendar-legend">
+              <span><i class="legend-dot legend-ccss"></i> CCSS</span>
+              <span><i class="legend-dot legend-aya"></i> AyA</span>
+              <span><i class="legend-dot legend-vacaciones"></i> Vacaciones</span>
+              <span><i class="legend-dot legend-conflict"></i> Conflicto</span>
             </div>
 
             <div class="cal-grid" id="cal-grid"></div>
@@ -234,18 +131,13 @@
           <!-- Sidebar -->
           <div class="sidebar">
 
-            <!-- Today Status -->
             <div class="card">
               <h3 class="card-title">Hoy estás en</h3>
-
-              <div id="today-location" class="status-indicator status-none">
-                Sin asignación
-              </div>
+              <div id="today-location" class="status-indicator status-none">Sin asignación</div>
             </div>
 
-            <!-- Request form -->
             <div class="card" id="request-card">
-              <h3 class="card-title">Solicitar día</h3>
+              <h3 class="card-title" id="request-title">Solicitar día</h3>
 
               <div id="request-form">
                 <div class="form-group">
@@ -254,33 +146,18 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="req-note">
-                    Nota <span style="color:#9ca3af">(opcional)</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    id="req-note"
-                    placeholder="Ej: Reunión de revisión"
-                  />
+                  <label for="req-note">Nota <span>(opcional)</span></label>
+                  <input type="text" id="req-note" placeholder="Ej: Reunión, soporte o vacaciones" />
                 </div>
 
-                <button
-                  type="button"
-                  class="btn-primary"
-                  id="req-btn"
-                  onclick="submitRequest()"
-                >
-                  Solicitar día
-                </button>
+                <button type="button" class="btn-primary" id="req-btn" onclick="submitRequest()">Solicitar día</button>
               </div>
             </div>
 
-            <!-- Stats -->
             <div class="card">
               <h3 class="card-title">Este mes</h3>
 
-              <div class="stats-row">
+              <div class="stats-row stats-row-large">
                 <div class="stat-box blue">
                   <div class="stat-num" id="stat-ccss">0</div>
                   <div class="stat-lbl">CCSS</div>
@@ -291,32 +168,27 @@
                   <div class="stat-lbl">AyA</div>
                 </div>
 
+                <div class="stat-box purple">
+                  <div class="stat-num" id="stat-vac">0</div>
+                  <div class="stat-lbl">Vacaciones</div>
+                </div>
+
                 <div class="stat-box yellow">
                   <div class="stat-num" id="stat-pend">0</div>
                   <div class="stat-lbl">Pendientes</div>
                 </div>
 
-                <div class="stat-box red">
+                <div class="stat-box red stat-wide">
                   <div class="stat-num" id="stat-conf">0</div>
                   <div class="stat-lbl">Conflictos</div>
                 </div>
               </div>
             </div>
 
-            <!-- Requests list -->
             <div class="card" style="flex:1">
               <div class="card-top">
                 <h3 class="card-title">Solicitudes</h3>
-
-                <button
-                  type="button"
-                  class="btn-sm-approve"
-                  id="approve-all-btn"
-                  style="display:none"
-                  onclick="approveAll()"
-                >
-                  Aprobar sin conflictos
-                </button>
+                <button type="button" class="btn-sm-approve" id="approve-all-btn" style="display:none" onclick="approveAll()">Aprobar sin conflictos</button>
               </div>
 
               <div class="req-list" id="req-list">
@@ -331,39 +203,23 @@
   </div>
 
   <!-- Day Modal -->
-  <div
-    class="modal-overlay"
-    id="modal"
-    onclick="closeModal(event)"
-    role="dialog"
-    aria-modal="true"
-  >
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)" role="dialog" aria-modal="true">
     <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-head">
         <h3 id="modal-title"></h3>
-
-        <button
-          type="button"
-          class="modal-close"
-          onclick="closeModal()"
-          aria-label="Cerrar"
-        >
-          &#10005;
-        </button>
+        <button type="button" class="modal-close" onclick="closeModal()" aria-label="Cerrar">&#10005;</button>
       </div>
 
       <div id="modal-body"></div>
-
       <div class="modal-footer" id="modal-footer"></div>
     </div>
   </div>
 
-  <!-- Toast -->
   <div class="toast" id="toast" role="alert"></div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./config.js?v=8"></script>
-  <script src="./app.js?v=8"></script>
+  <script src="./config.js?v=10"></script>
+  <script src="./app.js?v=10"></script>
 </body>
 </html>
+``
